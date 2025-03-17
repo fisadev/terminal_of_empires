@@ -4,7 +4,7 @@ A simple terminal turn-based strategy game where you build an empire and fight a
 
 Made for a PyCamp, but can be played by anyone.
 
-![demo](./demo.mp4)
+![demo](./demo.gif)
 
 # Installation
 
