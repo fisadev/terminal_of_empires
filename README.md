@@ -186,6 +186,12 @@ The costs are:
 - Fort: 50 resources.
 - Castle: 100 resources.
 
+For instance, to build a fort at position x=10, y=20, you could do:
+
+```python
+return "conquer", Position(10, 20)
+```
+
 If you order a valid conquer action, the result is that the enemy structure will be destroyed and you will own that piece of terrain (which will now be just "land").
 
 # Bot examples
