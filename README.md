@@ -30,7 +30,7 @@ To conquer another player you must destroy all of their castles (each player sta
 By default, the game includes these bot types for you to practice and learn from:
 
 - `passive`: a bot that just sits there without doing anything.
-- `pacifist`: a bot that expands only by conquering neutral terrain, never attacks other players.
+- `pacifist`: a bot that expands only by conquering neutral terrain and building farms, never attacks other players.
 - `aggressive`: a bot that attacks whenever possible, but never builds defensive or production structures.
 - `defensive`: a bot that builds lots of forts and attacks a bit.
 - `super_random`: a bot that tries to do random (usually invalid) moves.
