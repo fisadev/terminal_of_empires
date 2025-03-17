@@ -48,11 +48,11 @@ class ToEUI:
                 for player in toe.players.values():
                     if player.alive:
                         if player is winner:
-                            print(f"{self.player_colors[player.name]}{player.name}: WINNER!!{self.term.normal}")
+                            print(f"{self.player_colors[player.name]}{player}: WINNER!!{self.term.normal}")
                         else:
-                            print(f"{self.player_colors[player.name]}{player.name}: {player.resources}{self.term.normal}")
+                            print(f"{self.player_colors[player.name]}{player}: {player.resources}{self.term.normal}")
                     else:
-                        print(f"{self.player_colors[player.name]}{player.name}: DEAD{self.term.normal}")
+                        print(f"{self.player_colors[player.name]}{player}: DEAD{self.term.normal}")
 
                 if winner:
                     print("Press ctrl-c to quit")
