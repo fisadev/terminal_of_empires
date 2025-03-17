@@ -4,6 +4,8 @@ A simple terminal turn-based strategy game where you build an empire and fight a
 
 Made for a PyCamp, but can be played by anyone.
 
+<video src='./demo.mp4' />
+
 # Installation
 
 A relatively modern Python 3 is required, and using virtualenvs is highly recommended.
