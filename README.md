@@ -16,10 +16,10 @@ pip install -r requirements.txt  # install dependencies
 
 # Playing
 
-To play, just run this specifying the size of the map, and the names and bot types of the players:
+To play, just run `toe.py` specifying the names and bot types of the players:
 
 ```bash
-python toe.py --width 40 --height 20 --players juan:pacifist,pedro:pacifist,sofi:aggressive,laura:defensive
+python toe.py --players juan:pacifist,pedro:pacifist,sofi:aggressive,laura:defensive
 ```
 
 The first player to conquer the rest of the players wins.
@@ -27,13 +27,14 @@ To conquer another player you must destroy all of their castles (each player sta
 
 By default, the game includes these bot types for you to practice and learn from:
 
-- `rando`: a bot that tries to do random (usually invalid) moves.
 - `passive`: a bot that just sits there without doing anything.
 - `pacifist`: a bot that expands only by conquering neutral terrain, never attacks other players.
 - `aggressive`: a bot that attacks whenever possible, but never builds defensive or production structures.
 - `defensive`: a bot that builds lots of forts and attacks a bit.
+- `super_random`: a bot that tries to do random (usually invalid) moves.
 
-There are more option, consult them with:
+There are more options that allow you to control the size of the map, speed of the game, etc.
+Consult them with:
 
 ```bash
 python toe.py --help
