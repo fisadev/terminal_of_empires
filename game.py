@@ -259,7 +259,7 @@ class ToE:
         cost = STRUCTURE_COST[structure]
 
         if player.resources < cost:
-            return False, f"not enough resources ({cost}) to build this structure"
+            return False, f"not enough resources ({cost}) to build {structure}"
 
         if position not in self.world:
             return False, f"can't conquer a position that isn't on the map {position}"
