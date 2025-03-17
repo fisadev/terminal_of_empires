@@ -21,7 +21,7 @@ pip install -r requirements.txt  # install dependencies
 To play, just run `toe.py` specifying the names and bot types of the players:
 
 ```bash
-python toe.py --players juan:pacifist,pedro:pacifist,sofi:aggressive,laura:defensive
+python toe.py --players juan:defensive,pedro:aggressive,sofi:pacifist,laura:pacifist
 ```
 
 The first player to conquer the rest of the players wins.
