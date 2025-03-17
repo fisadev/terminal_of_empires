@@ -38,25 +38,24 @@ class ToEUI:
         """
         Render the game state.
         """
-        with self.term.fullscreen():
-            for position, terrain in toe.world.items():
-                with self.term.location(position.x * 2, position.y):
-                    print(f"{self.player_colors[terrain.owner]}{ICONS[terrain.structure]}{self.term.normal}", end="")
+        for position, terrain in toe.world.items():
+            with self.term.location(position.x * 2, position.y):
+                print(f"{self.player_colors[terrain.owner]}{ICONS[terrain.structure]}{self.term.normal}", end="")
 
-            with self.term.location(0, toe.map_size.y):
-                print("Turn", turn_number, "| Resources:")
-                for player in toe.players.values():
-                    if player.alive:
-                        if player is winner:
-                            print(f"{self.player_colors[player.name]}{player}: WINNER!!{self.term.normal}")
-                        else:
-                            print(f"{self.player_colors[player.name]}{player}: {player.resources}{self.term.normal}")
+        with self.term.location(0, toe.map_size.y):
+            print("Turn", turn_number, "| Resources:")
+            for player in toe.players.values():
+                if player.alive:
+                    if player is winner:
+                        print(f"{self.player_colors[player.name]}{player}: WINNER!!{self.term.normal}")
                     else:
-                        print(f"{self.player_colors[player.name]}{player}: DEAD{self.term.normal}")
+                        print(f"{self.player_colors[player.name]}{player}: {player.resources}{self.term.normal}")
+                else:
+                    print(f"{self.player_colors[player.name]}{player}: DEAD{self.term.normal}")
 
-                if winner:
-                    print("Press ctrl-c to quit")
-                    sleep(99999999)
+            if winner:
+                print("Press ctrl-c to quit")
+                sleep(99999999)
 
         sleep(self.turn_delay)
 

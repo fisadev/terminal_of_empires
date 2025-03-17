@@ -57,7 +57,9 @@ def main(width, height, players, no_ui, ui_turn_delay):
         bot_logic = import_bot_logic(bot_type)
         toe.add_player(name, bot_logic)
 
-    winner, turns_played = toe.play()
+    with ui.term.fullscreen():
+        winner, turns_played = toe.play()
+
     if not ui:
         print(winner, "won in", turns_played, "turns!")
 
