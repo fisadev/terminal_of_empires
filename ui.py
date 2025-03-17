@@ -44,7 +44,7 @@ class ToEUI:
                     print(f"{self.player_colors[terrain.owner]}{ICONS[terrain.structure]}{self.term.normal}", end="")
 
             with self.term.location(0, toe.map_size.y):
-                print("Turn", turn_number, "Resources:")
+                print("Turn", turn_number, "| Resources:")
                 for player in toe.players.values():
                     if player.alive:
                         if player is winner:
