@@ -42,6 +42,8 @@ Consult them with:
 python toe.py --help
 ```
 
+For instance, `--ui-turn-delay` is a very useful one if you want to play faster matches :)
+
 Also, each match produces a very detailed `toe.log` with all the actions the bots tried to play and their results. 
 You can even query the log live, while the game is playing.
 
