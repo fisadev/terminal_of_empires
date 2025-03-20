@@ -138,7 +138,6 @@ class ToE:
                 self.ui.render(self, turn_number, winner)
 
             if winner:
-                logging.info("winner found: %s", winner)
                 return winner.name, turn_number
 
             turn_number += 1
