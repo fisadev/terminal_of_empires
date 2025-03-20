@@ -42,6 +42,9 @@ Consult them with:
 python toe.py --help
 ```
 
+Also, each match produces a very detailed `toe.log` with all the actions the bots tried to play and their results. 
+You can even query the log live, while the game is playing.
+
 # Making your own bot
 
 To make your own bot logic, just create a Python file in the `bots/` directory that defines a class called "BotLogic", which should have the following methods:
