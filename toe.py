@@ -34,7 +34,8 @@ def import_bot_logic(bot_type):
 @click.option("--players", type=str, help="Players, specified as a comma separated list of player_name:bot_type.")
 @click.option("--no-ui", is_flag=True, help="Don't show the ui, just run the game until the end and inform the winner.")
 @click.option("--ui-turn-delay", type=float, default=0.2, help="Seconds to wait between turns when showing the ui.")
-def main(width, height, players, no_ui, ui_turn_delay):
+@click.option("--log-path", type=str, default="./toe.log", help="Path for the log file of the game.")
+def main(width, height, players, no_ui, ui_turn_delay, log_path):
     """
     Run a game of Terminal of Empires.
     """
@@ -43,7 +44,7 @@ def main(width, height, players, no_ui, ui_turn_delay):
     else:
         ui = ToEUI(ui_turn_delay)
 
-    toe = ToE(width, height, ui=ui)
+    toe = ToE(width, height, ui=ui, log_path=log_path)
 
     # TODO allow name:bot_type:castle_position
     for player_info in players.split(","):
@@ -57,10 +58,11 @@ def main(width, height, players, no_ui, ui_turn_delay):
         bot_logic = import_bot_logic(bot_type)
         toe.add_player(name, bot_logic)
 
-    with ui.show():
+    if ui:
+        with ui.show():
+            winner, turns_played = toe.play()
+    else:
         winner, turns_played = toe.play()
-
-    if not ui:
         print(winner, "won in", turns_played, "turns!")
 
 

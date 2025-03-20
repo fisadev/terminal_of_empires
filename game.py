@@ -4,11 +4,6 @@ import sys
 import logging
 from collections import namedtuple
 
-logging.basicConfig(
-    filename="./toe.log", level=logging.INFO, filemode="w",
-    format="%(asctime)s %(levelname)s %(message)s",
-)
-
 # TODO ideas:
 # accion de construir castillo por 100, quizas mejorando cantidad de acciones por turno?
 
@@ -72,7 +67,7 @@ class ToE:
     """
     A game of Terrain of Empires.
     """
-    def __init__(self, width, height, ui=None):
+    def __init__(self, width, height, ui=None, log_path=None):
         self.map_size = Position(width, height)
         self.ui = ui
 
@@ -82,6 +77,14 @@ class ToE:
             for x in range(self.map_size.x)
             for y in range(self.map_size.y)
         }
+
+        if log_path is None:
+            log_path = "./toe.log"
+
+        logging.basicConfig(
+            filename=log_path, level=logging.INFO, filemode="w",
+            format="%(asctime)s %(levelname)s %(message)s",
+        )
         logging.info("game created with size %s x %s", width, height)
 
     def add_player(self, name, bot_logic, castle_position=None):
