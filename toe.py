@@ -46,7 +46,6 @@ def main(width, height, players, no_ui, ui_turn_delay, log_path):
 
     toe = ToE(width, height, ui=ui, log_path=log_path)
 
-    # TODO allow name:bot_type:castle_position
     for player_info in players.split(","):
         try:
             name, bot_type = player_info.split(":")
