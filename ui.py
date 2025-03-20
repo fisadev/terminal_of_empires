@@ -39,26 +39,45 @@ class ToEUI:
         """
         Render the game state.
         """
+        self.render_world(toe, winner, blink_winner=False)
+        self.render_players_status(toe, turn_number, winner, blink_winner=False)
+
+        if winner:
+            blink = True
+            while True:
+                sleep(0.3)
+                self.render_world(toe, winner, blink_winner=blink)
+                self.render_players_status(toe, turn_number, winner, blink_winner=blink)
+                blink = not blink
+
+
+        sleep(self.turn_delay)
+
+    def render_world(self, toe, winner, blink_winner=False):
+        """
+        Render the world of the game.
+        """
         for position, terrain in toe.world.items():
             with self.term.location(position.x * 2, position.y):
-                print(f"{self.player_colors[terrain.owner]}{ICONS[terrain.structure]}{self.term.normal}", end="")
+                if winner and blink_winner and terrain.owner == winner.name:
+                    print(f"{self.player_colors[None]}{ICONS[terrain.structure]}{self.term.normal}", end="")
+                else:
+                    print(f"{self.player_colors[terrain.owner]}{ICONS[terrain.structure]}{self.term.normal}", end="")
 
+    def render_players_status(self, toe, turn_number, winner, blink_winner=False):
         with self.term.location(0, toe.map_size.y):
             print("Turn", turn_number, "| Resources:")
             for player in toe.players.values():
                 if player.alive:
                     if player is winner:
-                        print(f"{self.player_colors[player.name]}{player}: WINNER!!{self.term.normal}")
+                        if blink_winner:
+                            print(f"{self.player_colors[None]}{player}: WINNER!!{self.term.normal} Press ctrl-c to quit")
+                        else:
+                            print(f"{self.player_colors[player.name]}{player}: WINNER!!{self.term.normal} Press ctrl-c to quit")
                     else:
                         print(f"{self.player_colors[player.name]}{player}: {player.resources}{self.term.normal}")
                 else:
                     print(f"{self.player_colors[player.name]}{player}: DEAD{self.term.normal}")
-
-            if winner:
-                print("Press ctrl-c to quit")
-                sleep(99999999)
-
-        sleep(self.turn_delay)
 
     @contextmanager
     def show(self):
