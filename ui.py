@@ -1,4 +1,5 @@
 import sys
+from contextlib import contextmanager
 from time import sleep
 
 from blessings import Terminal
@@ -58,6 +59,11 @@ class ToEUI:
                 sleep(99999999)
 
         sleep(self.turn_delay)
+
+    @contextmanager
+    def show(self):
+        with self.term.fullscreen(), self.term.hidden_cursor():
+            yield self
 
 
 if __name__ == "__main__":
