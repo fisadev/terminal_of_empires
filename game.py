@@ -128,9 +128,9 @@ class ToE:
 
                 turn_ok, reason = self.run_player_turn(player)
                 if turn_ok:
-                    logging.info("%s turn ran ok: %s", player, reason)
+                    logging.info("%s action ran ok: %s", player, reason)
                 else:
-                    logging.info("%s turn failed: %s", player, reason)
+                    logging.info("%s action failed: %s", player, reason)
 
             winner = self.get_winner()
 
@@ -150,11 +150,13 @@ class ToE:
         player_world = self.copy_world_for_player(player)
 
         try:
+            logging.info("%s calling turn() function with %s resources", player, player.resources)
             action = player.bot_logic.turn(
                 self.map_size,
                 player.resources,
                 player_world,
             )
+            logging.info("%s requested action: %s", player, action)
         except Exception as err:
             return False, f"{err} when calling the bot logic turn() method"
 
@@ -242,7 +244,7 @@ class ToE:
                 thing_conquered = f"unprotected {thing_conquered}"
 
         if player.resources < cost:
-            return False, f"not enough resources ({cost}) to conquer {thing_conquered}"
+            return False, f"not enough resources to conquer {thing_conquered}, costs {cost}"
 
         self.world[position] = Terrain(LAND, player.name)
         player.resources -= cost
@@ -250,6 +252,7 @@ class ToE:
         enemy = target.owner
         if enemy is None:
             enemy = "neutral"
+
         return True, f"conquered {thing_conquered} from {enemy} spending {cost} resources"
 
     def build(self, player, structure, position):
@@ -259,7 +262,7 @@ class ToE:
         cost = STRUCTURE_COST[structure]
 
         if player.resources < cost:
-            return False, f"not enough resources ({cost}) to build {structure}"
+            return False, f"not enough resources to build {structure}, costs {cost}"
 
         if position not in self.world:
             return False, f"can't conquer a position that isn't on the map {position}"
@@ -269,7 +272,7 @@ class ToE:
 
         self.world[position] = Terrain(structure, player.name)
         player.resources -= cost
-        return True, f"built {structure} paying {cost} resources"
+        return True, f"built {structure} spending {cost} resources"
 
     def adjacent_positions(self, position):
         """
@@ -301,7 +304,14 @@ class ToE:
 
         # update alive/dead statuses
         for player in self.players.values():
-            player.alive = player.name in players_with_castles
+            was_alive = player.alive
+            still_alive = player.name in players_with_castles
+            player.alive = still_alive
+
+            if was_alive and not still_alive:
+                logging.info("%s died! It no longer has castles", player)
 
         if len(players_with_castles) == 1:
-            return self.players[players_with_castles.pop()]
+            winner = self.players[players_with_castles.pop()]
+            logging.info("%s won!", winner)
+            return winner
