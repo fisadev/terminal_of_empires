@@ -65,6 +65,9 @@ class ToEUI:
                     print(f"{self.player_colors[terrain.owner]}{ICONS[terrain.structure]}{self.term.normal}", end="")
 
     def render_players_status(self, toe, turn_number, winner, blink_winner=False):
+        """
+        Render the status of the players.
+        """
         with self.term.location(0, toe.map_size.y):
             print("Turn", turn_number, "| Resources:")
             for player in toe.players.values():
