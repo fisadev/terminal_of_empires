@@ -75,9 +75,9 @@ class ToEUI:
                         else:
                             print(f"{self.player_colors[player.name]}{player}: WINNER!!{self.term.normal} Press ctrl-c to quit")
                     else:
-                        print(f"{self.player_colors[player.name]}{player}: {player.resources}{self.term.normal}")
+                        print(f"{self.player_colors[player.name]}{player}: {player.resources}{self.term.normal}     ")
                 else:
-                    print(f"{self.player_colors[player.name]}{player}: DEAD{self.term.normal}")
+                    print(f"{self.player_colors[player.name]}{player}: DEAD{self.term.normal}     ")
 
     @contextmanager
     def show(self):
