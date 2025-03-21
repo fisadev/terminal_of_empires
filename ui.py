@@ -1,9 +1,8 @@
-import sys
 from contextlib import contextmanager
 from time import sleep
 
 from blessings import Terminal
-from game import Position, FARM, FORT, CASTLE, LAND
+from game import FARM, FORT, CASTLE, LAND
 
 
 ICONS = {
