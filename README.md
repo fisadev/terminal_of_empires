@@ -191,7 +191,7 @@ The costs are:
 - Fort: 50 resources.
 - Castle: 100 resources.
 
-For instance, to build a fort at position x=10, y=20, you could do:
+For instance, to conquer position x=10, y=20, you could do:
 
 ```python
 return "conquer", Position(10, 20)
