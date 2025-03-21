@@ -7,35 +7,15 @@ from game import ToE
 from ui import ToEUI
 
 
-def import_bot_logic(bot_type):
-    """
-    Try to import the bot logic module and instantiate its BotLogic class.
-    """
-    try:
-        bot_module = importlib.import_module("bots." + bot_type)
-    except ImportError:
-        print(f"Could not import bot module named {bot_type}.")
-        print("Are you sure there's a bots/{bot_type}.py file and it's a valid python module?")
-        sys.exit(1)
-
-    try:
-        bot_class = getattr(bot_module, "BotLogic")
-    except AttributeError:
-        print(f"Could not find BotLogic class in bot module named {bot_type}.")
-        print("Are you sure there's a BotLogic class defined in bots/{bot_type}.py?")
-        sys.exit(1)
-
-    return bot_class()
-
-
 @click.command()
 @click.option("--width", type=int, default=40, help="The width of the map.")
 @click.option("--height", type=int, default=20, help="The height of the map.")
 @click.option("--players", type=str, help="Players, specified as a comma separated list of player_name:bot_type.")
 @click.option("--no-ui", is_flag=True, help="Don't show the ui, just run the game until the end and inform the winner.")
 @click.option("--ui-turn-delay", type=float, default=0.2, help="Seconds to wait between turns when showing the ui.")
+@click.option("--turn-timeout", type=float, default=0.5, help="Maximum seconds a player can take to think its turn.")
 @click.option("--log-path", type=click.Path(), default="./toe.log", help="Path for the log file of the game.")
-def main(width, height, players, no_ui, ui_turn_delay, log_path):
+def main(width, height, players, no_ui, ui_turn_delay, log_path, turn_timeout):
     """
     Run a game of Terminal of Empires.
     """
@@ -44,7 +24,7 @@ def main(width, height, players, no_ui, ui_turn_delay, log_path):
     else:
         ui = ToEUI(ui_turn_delay)
 
-    toe = ToE(width, height, ui=ui, log_path=log_path)
+    toe = ToE(width, height, ui=ui, log_path=log_path, turn_timeout=turn_timeout)
 
     for player_info in players.split(","):
         try:
@@ -54,8 +34,7 @@ def main(width, height, players, no_ui, ui_turn_delay, log_path):
             print(f"Invalid player info: {player_info}. Should be name:bot_type")
             sys.exit(1)
 
-        bot_logic = import_bot_logic(bot_type)
-        toe.add_player(name, bot_logic)
+        toe.add_player(name, bot_type)
 
     if ui:
         with ui.show():

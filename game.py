@@ -3,6 +3,9 @@ import importlib
 import sys
 import logging
 from collections import namedtuple
+from datetime import datetime, timedelta
+from multiprocessing import Process, Manager
+from time import sleep
 
 
 LAND = "land"
@@ -41,6 +44,11 @@ HARVEST_PRODUCTION = {
     CASTLE: 5,
 }
 
+COMMS_IDLE = "idle"
+COMMS_AWAITING_ACTION = "awaiting_action"
+COMMS_ACTION_READY = "action_ready"
+COMMS_ACTION_FAILED = "action_failed"
+
 
 Position = namedtuple("Position", "x y")
 Terrain = namedtuple("Terrain", "structure owner")
@@ -49,26 +57,104 @@ Terrain = namedtuple("Terrain", "structure owner")
 class Player:
     """
     A player playing the game.
+    Its bot logic is run in a subprocess.
     """
-    def __init__(self, name, bot_logic, resources):
+    def __init__(self, name, bot_type, resources):
         self.name = name
-        self.bot_logic = bot_logic
+        self.bot_type = bot_type
         self.resources = resources
         self.alive = True
 
-    def __str__(self):
-        return f"{self.name}:{self.bot_logic.__class__.__module__.split('.')[-1]}"
+        self.comms = None
+        self.process = None
 
+    def __str__(self):
+        return f"{self.name}:{self.bot_type}"
+
+    def start_bot_logic(self):
+        """
+        Launch the bot logic subprocess.
+        """
+        self.comms = Manager().dict()
+        self.comms["status"] = COMMS_IDLE
+        self.process = Process(target=bot_logic_subprocess_loop, args=(self.bot_type, self.comms))
+        self.process.start()
+
+    def stop_bot_logic(self):
+        """
+        Stop the bot logic subprocess.
+        """
+        self.process.kill()
+
+    def ask_action(self, map_size, world, timeout):
+        """
+        Ask the bot logic for an action, waiting up to timeout seconds.
+        """
+        self.comms["action_params"] = (map_size, self.resources, world)
+        self.comms["status"] = COMMS_AWAITING_ACTION
+
+        start_time = datetime.now()
+        while datetime.now() - start_time < timeout:
+            if self.comms["status"] == COMMS_ACTION_READY:
+                return True, self.comms["action"]
+            elif self.comms["status"] == COMMS_ACTION_FAILED:
+                return False, self.comms["error"]
+            sleep(0.001)
+
+        return False, f"timeout, did not return an action in {timeout.total_seconds()} seconds"
+
+
+def bot_logic_subprocess_loop(bot_type, comms):
+    """
+    The loop that runs the bot logic in a subprocess, communicating via comms.
+    """
+    bot_logic = import_bot_logic(bot_type)
+
+    while True:
+        if comms["status"] == COMMS_AWAITING_ACTION:
+            map_size, player_resources, world = comms["action_params"]
+            try:
+                action = bot_logic.turn(map_size, player_resources, world)
+
+                comms["action"] = action
+                comms["status"] = COMMS_ACTION_READY
+            except Exception as err:
+                comms["error"] = repr(err)
+                comms["status"] = COMMS_ACTION_FAILED
+        sleep(0.001)
+
+
+def import_bot_logic(bot_type):
+    """
+    Try to import the bot logic module and instantiate its BotLogic class.
+    """
+    try:
+        bot_module = importlib.import_module("bots." + bot_type)
+    except ImportError:
+        print(f"Could not import bot module named {bot_type}.")
+        print(f"Are you sure there's a bots/{bot_type}.py file and it's a valid python module?")
+        sys.exit(1)
+
+    try:
+        bot_class = getattr(bot_module, "BotLogic")
+    except AttributeError:
+        print(f"Could not find BotLogic class in bot module named {bot_type}.")
+        print(f"Are you sure there's a BotLogic class defined in bots/{bot_type}.py?")
+        sys.exit(1)
+
+    return bot_class()
 
 class ToE:
     """
     A game of Terrain of Empires.
     """
-    def __init__(self, width, height, ui=None, log_path=None):
+    def __init__(self, width, height, ui=None, log_path=None, turn_timeout=0.5):
         self.map_size = Position(width, height)
         self.ui = ui
+        self.turn_timeout = timedelta(seconds=turn_timeout)
 
         self.players = {}
+        self.players_comms = {}
         self.world = {
             Position(x, y): Terrain(LAND, None)
             for x in range(self.map_size.x)
@@ -84,7 +170,7 @@ class ToE:
         )
         logging.info("game created with size %s x %s", width, height)
 
-    def add_player(self, name, bot_logic, castle_position=None):
+    def add_player(self, name, bot_type, castle_position=None):
         """
         Add a player to the map. If no castle position is specified, choose one at random.
         """
@@ -98,7 +184,8 @@ class ToE:
                 if self.world[castle_position].structure == LAND:
                     break
 
-        player = Player(name, bot_logic, resources=0)
+        player = Player(name, bot_type, resources=0)
+
         self.players[name] = player
         self.world[castle_position] = Terrain(CASTLE, name)
 
@@ -114,6 +201,10 @@ class ToE:
         Return the winner and the number of turns played.
         """
         logging.info("starting game loop")
+
+        logging.info("starting the subprocesses for the player bots logic")
+        for player in self.players.values():
+            player.start_bot_logic()
 
         turn_number = 1
         while max_turns is None or turn_number < max_turns:
@@ -148,16 +239,17 @@ class ToE:
         """
         player_world = self.copy_world_for_player(player)
 
-        try:
-            logging.info("%s calling turn() function with %s resources", player, player.resources)
-            action = player.bot_logic.turn(
-                self.map_size,
-                player.resources,
-                player_world,
-            )
+        logging.info("%s calling turn() function with %s resources", player, player.resources)
+        got_action, action = player.ask_action(
+            self.map_size,
+            player_world,
+            timeout=self.turn_timeout,
+        )
+
+        if got_action:
             logging.info("%s requested action: %s", player, action)
-        except Exception as err:
-            return False, f"{err} when calling the bot logic turn() method"
+        else:
+            return False, action
 
         if not isinstance(action, (list, tuple)) or not len(action) == 2:
             return False, f"{action} does not follow the action format, (action_type, position)"
