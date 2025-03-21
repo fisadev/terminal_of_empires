@@ -102,24 +102,24 @@ if world[Position(10, 20)].structure == "castle":
 ```
 
 
-### Land
+### Land (`::`)
 
 Land is just that, empty land.
 It doesn't produce resources, doesn't defend, doesn't do anything.
 And it can be easily conquered.
 But you need to own land to be able to build structures in it.
 
-### Farm
+### Farm (`//`)
 
 Farms produce resources during harvest.
 But they're easy to conquer.
 
-### Fort
+### Fort (`<>`)
 
 Forts are very hard to conquer.
 They can also protect nearby land and farms.
 
-### Castle
+### Castle (`[]`)
 
 Castles are the most important structure.
 They protect nearby land and farms, like a fort.
@@ -191,7 +191,7 @@ The costs are:
 - Fort: 50 resources.
 - Castle: 100 resources.
 
-For instance, to build a fort at position x=10, y=20, you could do:
+For instance, to conquer position x=10, y=20, you could do:
 
 ```python
 return "conquer", Position(10, 20)

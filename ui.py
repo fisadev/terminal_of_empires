@@ -64,22 +64,44 @@ class ToEUI:
                     print(f"{self.player_colors[terrain.owner]}{ICONS[terrain.structure]}{self.term.normal}", end="")
 
     def render_players_status(self, toe, turn_number, winner, blink_winner=False):
+        """
+        Render the status of the players.
+        """
         with self.term.location(0, toe.map_size.y):
-            print("Turn", turn_number, "| Resources:")
+            print("Turn", turn_number, "| Stats:")
+            player_stats = {
+                player.name: {CASTLE: 0, FARM: 0, FORT: 0, "tiles": 0}
+                for player in toe.players.values()
+            }
+
+            for terrain in toe.world.values():
+                if terrain.owner is not None:
+                    player_stats[terrain.owner]["tiles"] += 1
+                    if terrain.structure in (FARM, FORT, CASTLE):
+                        player_stats[terrain.owner][terrain.structure] += 1
+
+            total_tiles = toe.map_size.x * toe.map_size.y
             for player in toe.players.values():
+                tiles = len([t for t in toe.world.values() if t.owner == player.name])
+                percent = int((tiles / total_tiles) * 100)
+                stats = f"{player.resources}$ {player_stats[player.name][CASTLE]}[] {player_stats[player.name][FARM]}// {player_stats[player.name][FORT]}<> {percent}%"
+
                 if player.alive:
                     if player is winner:
                         if blink_winner:
-                            print(f"{self.player_colors[None]}{player}: WINNER!!{self.term.normal} Press ctrl-c to quit")
+                            print(f"{self.player_colors[None]}{player}: {stats} WINNER!!{self.term.normal} Press ctrl-c to quit")
                         else:
-                            print(f"{self.player_colors[player.name]}{player}: WINNER!!{self.term.normal} Press ctrl-c to quit")
+                            print(f"{self.player_colors[player.name]}{player}: {stats} WINNER!!{self.term.normal} Press ctrl-c to quit")
                     else:
-                        print(f"{self.player_colors[player.name]}{player}: {player.resources}{self.term.normal}")
+                        print(f"{self.player_colors[player.name]}{player}: {stats}{self.term.normal}     ")
                 else:
-                    print(f"{self.player_colors[player.name]}{player}: DEAD{self.term.normal}")
+                    print(f"{self.player_colors[player.name]}{player}: {stats} DEAD{self.term.normal}     ")
 
     @contextmanager
     def show(self):
+        """
+        Context manager to wrap the showing of the game ui during its execution.
+        """
         with self.term.fullscreen(), self.term.hidden_cursor():
             yield self
 
