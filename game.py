@@ -60,7 +60,7 @@ class Player:
         self.alive = True
 
     def __str__(self):
-        return f"{self.name}:{self.bot_logic.__class__.__module__}"
+        return f"{self.name}:{self.bot_logic.__class__.__module__.split('.')[-1]}"
 
 
 class ToE:
