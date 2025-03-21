@@ -84,6 +84,9 @@ class ToEUI:
 
     @contextmanager
     def show(self):
+        """
+        Context manager to wrap the showing of the game ui during its execution.
+        """
         with self.term.fullscreen(), self.term.hidden_cursor():
             yield self
 
