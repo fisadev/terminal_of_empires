@@ -4,9 +4,6 @@ import sys
 import logging
 from collections import namedtuple
 
-# TODO ideas:
-# accion de construir castillo por 100, quizas mejorando cantidad de acciones por turno?
-
 
 LAND = "land"
 FARM = "farm"
