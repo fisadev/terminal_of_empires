@@ -1,6 +1,4 @@
 import random
-import importlib
-import sys
 import logging
 from collections import namedtuple
 
