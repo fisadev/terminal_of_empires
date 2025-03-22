@@ -72,7 +72,7 @@ class ToEUI:
         Render the status of the players.
         """
         with self.term.location(0, toe.map_size.y):
-            print("Turn", turn_number, "| Stats:")
+            print("Turn", turn_number, "| Stats:                      ")
             player_stats = {
                 player.name: {CASTLE: 0, FARM: 0, FORT: 0, "tiles": 0}
                 for player in toe.players.values()
