@@ -84,7 +84,14 @@ class ToEUI:
             for player in toe.players.values():
                 tiles = len([t for t in toe.world.values() if t.owner == player.name])
                 percent = int((tiles / total_tiles) * 100)
-                stats = f"{player.resources}$ {player_stats[player.name][CASTLE]}[] {player_stats[player.name][FARM]}// {player_stats[player.name][FORT]}<> {percent}%"
+                stats = (
+                    f"{player.resources}$ "
+                    f"{player_stats[player.name][CASTLE]}[] "
+                    f"{player_stats[player.name][FARM]}// "
+                    f"{player_stats[player.name][FORT]}<> "
+                    f"{player_stats[player.name]["tiles"]}t "
+                    f"{percent}%"
+                )
 
                 if player.alive:
                     if player is winner:
