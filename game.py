@@ -49,6 +49,7 @@ COMMS_AWAITING_ACTION = "awaiting_action"
 COMMS_ACTION_READY = "action_ready"
 COMMS_ACTION_FAILED = "action_failed"
 
+TILES_PER_CASTLE_LIMIT = 50
 
 Position = namedtuple("Position", "x y")
 Terrain = namedtuple("Terrain", "structure owner")
@@ -360,6 +361,18 @@ class ToE:
 
         if self.world[position].owner != player.name:
             return False, "can't build structures on terrain that you don't own"
+
+        if structure == CASTLE:
+            owned_castles = 0
+            owned_tiles = 0
+            for terrain in self.world.values():
+                if terrain.owner == player.name and terrain.structure == CASTLE:
+                    owned_castles += 1
+                if terrain.owner == player.name:
+                    owned_tiles += 1
+
+            if owned_tiles / owned_castles >= TILES_PER_CASTLE_LIMIT:
+                return False, "can't build more castles, you need more tiles"
 
         self.world[position] = Terrain(structure, player.name)
         player.resources -= cost
