@@ -89,7 +89,7 @@ class ToEUI:
                     f"{player_stats[player.name][CASTLE]}[] "
                     f"{player_stats[player.name][FARM]}// "
                     f"{player_stats[player.name][FORT]}<> "
-                    f"{player_stats[player.name]["tiles"]}t "
+                    f"{player_stats[player.name]['tiles']}t "
                     f"{percent}%"
                 )
 
