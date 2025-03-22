@@ -15,7 +15,8 @@ from ui import ToEUI
 @click.option("--ui-turn-delay", type=float, default=0.2, help="Seconds to wait between turns when showing the ui.")
 @click.option("--turn-timeout", type=float, default=0.5, help="Maximum seconds a player can take to think its turn.")
 @click.option("--log-path", type=click.Path(), default="./toe.log", help="Path for the log file of the game.")
-def main(width, height, players, no_ui, ui_turn_delay, log_path, turn_timeout):
+@click.option("--max-turns", type=int, default=None, help="Maximum number of turns to play (no limit if not specified).")
+def main(width, height, players, no_ui, ui_turn_delay, log_path, turn_timeout, max_turns):
     """
     Run a game of Terminal of Empires.
     """
@@ -48,10 +49,11 @@ def main(width, height, players, no_ui, ui_turn_delay, log_path, turn_timeout):
 
     if ui:
         with ui.show():
-            winner, turns_played = toe.play()
+            winners, turns_played = toe.play(max_turns=max_turns)
     else:
-        winner, turns_played = toe.play()
-        print(winner, "won in", turns_played, "turns!")
+        winners, turns_played = toe.play(max_turns=max_turns)
+
+    print(" and ".join(p.name for p in winners), "won in", turns_played, "turns!")
 
 
 if __name__ == '__main__':
