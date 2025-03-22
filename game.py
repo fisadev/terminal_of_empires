@@ -2,7 +2,7 @@ import random
 import importlib
 import sys
 import logging
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 from datetime import datetime, timedelta
 from multiprocessing import Process, Manager
 from time import sleep
@@ -227,12 +227,19 @@ class ToE:
             winner = self.get_winner()
 
             if self.ui:
-                self.ui.render(self, turn_number, winner)
+                self.ui.render(self, turn_number, [winner] if winner else None)
 
             if winner:
-                return winner.name, turn_number
+                return [winner], turn_number
 
             turn_number += 1
+
+        # it's a tie! all alive players won
+        winners = [player for player in self.players.values() if player.alive]
+        if self.ui:
+            self.ui.render(self, turn_number, winners)
+
+        return winners, turn_number
 
     def run_player_turn(self, player):
         """
