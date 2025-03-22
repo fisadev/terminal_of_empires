@@ -54,7 +54,6 @@ class ToEUI:
                 self.render_players_status(toe, turn_number, winner_names, blink_winners=blink)
                 blink = not blink
 
-
         sleep(self.turn_delay)
 
     def render_world(self, toe, winner_names, blink_winners=False):
