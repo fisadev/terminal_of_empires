@@ -3,14 +3,14 @@ import random
 import math
 import logging
 
-def is_adjacent(position1, position2):
+def is_adjacent(position1, position2, distance=1):
     """
     Return True if the two positions are adjacent, False otherwise.
     """
     x1, y1 = position1
     x2, y2 = position2
 
-    return abs(x1 - x2) + abs(y1 - y2) <= 1
+    return abs(x1 - x2) + abs(y1 - y2) <= distance
 
 
 STRUCTURE_COST = {
@@ -20,9 +20,10 @@ STRUCTURE_COST = {
 }
 
 class BotLogic:
+    last_turn = None
     def turn(self, map_size, my_resources, world):
 
-        def nearest_point(points, target, world, objective=None):
+        def nearest_point(points, target, world, castle_enemy=False, castles_info={}):
             """
             Encuentra el punto más cercano a 'target' dentro de 'points'.
 
@@ -34,12 +35,21 @@ class BotLogic:
             min_distance = float('inf')
             closest = None
 
-            for point in points:
-                # Distancia Euclidiana: sqrt((x2 - x1)^2 + (y2 - y1)^2)
-                if objective != None:
-                    world_objectives = [x for x in world if world[x].structure == objective and world[x].owner != "mine"]
-                    return nearest_point((conquerable_neutral_terrain + enemy_terrain_near), world_objectives[0], world)
+            if castle_enemy:
+                for owner, positions in castles_info.items():
+                    if owner != "mine":
+                        for position in positions:
+                            for point in points:
+                                distance = math.sqrt((point.x - position.x)**2 + (point.y - position.y)**2)
 
+                                if distance < min_distance:
+                                    min_distance = distance
+                                    closest = point
+                return closest
+
+
+            for point in points:
+                # Distancia Euclidiana: sqrt((x2 - x1)^2 + (y2 - y1)^2)    
 
                 distance = math.sqrt((point.x - target.x)**2 + (point.y - target.y)**2)
 
@@ -49,52 +59,72 @@ class BotLogic:
 
             return closest
 
-        my_terrain = [position for position, terrain in world.items() if terrain.owner == "mine"]
-        my_castles = [x for x in my_terrain if world[x].structure == "castle"]
+        def is_alive(castles_people, enemy_terrain_near, world):
+            for position in enemy_terrain_near:
+                if castles_people.get(world[position].owner) != None:
+                    return True
+            else:
+                return False
+                    
 
+        my_terrain = [] 
+        my_castles = [] 
+        enemy_terrain_near = []
+        conquerable_neutral_terrain = []
+        castles_people = {}
+        pre_protection = []
 
-        enemy_terrain_near = [
-            position
-            for position, terrain in world.items()
-            if terrain.owner not in ("mine", None) and any(
-                is_adjacent(position, my_position)
-                for my_position in my_terrain
-            )
-        ]
+        #preparing lists and data
+        for position, terrain in world.items():
+            if terrain.owner == "mine":
+                my_terrain.append(position)
+                if terrain.structure == "castle":
+                    my_castles.append(position)
 
-        conquerable_neutral_terrain = [
-            position
-            for position, terrain in world.items()
-            if terrain.owner is None and any(
-                is_adjacent(position, my_position)
-                for my_position in my_terrain
-            )
-        ]
+            if terrain.structure == "castle":
+                if castles_people.get(terrain.owner) == None:
+                    castles_people[terrain.owner] = [position]
+                else:
+                    castles_people[terrain.owner].append(position)
+        
+        for my_position in my_terrain:
+            for position, terrain in world.items():
+                if terrain.owner not in ("mine", None) and is_adjacent(position, my_position) and castles_people.get(terrain.owner) != None:
+                    enemy_terrain_near.append(position)
+
+                elif is_adjacent(position, my_position) and terrain.owner != "mine":
+                    conquerable_neutral_terrain.append(position)
+
+                if is_adjacent(position, my_position, 2) and terrain.owner not in ("mine", None) and world[my_position].structure not in ("fort", "castle"):
+                    pre_protection.append((position, my_position))
+    
+        #end of preparing data
 
         if my_resources <= 10:
             return "harvest", None
-
+        if my_resources >= 100 and (len(my_terrain) / len(my_castles)+1) >= 50:
+            while True:
+                position = random.choice(my_terrain)
+                if world[position].structure not in ("castle", "fort"):
+                    return "castle", random.choice(my_terrain)
+                
         if len(enemy_terrain_near) > 0:
-            for my_position in my_terrain:
-                for position, terrain in world.items():
-                    if terrain.owner not in ("mine", None) and is_adjacent(position, my_position):
-                        if world[my_position].structure not in ("castle", "fort"):
-                            if my_resources >= 75:
-                                return "castle", my_position
+            if my_resources > 100:
+                return "conquer", nearest_point(enemy_terrain_near, my_castles[0], world, castle_enemy=True, castles_info=castles_people)
             else:
-                if my_resources >= 100:
-                    return "conquer", nearest_point(enemy_terrain_near, my_castles[-1], world, objective="castle")
-                else:
-                    return "harvest", None
-        else:
+                return "harvest", None
+
+        elif len(pre_protection) > 0 and my_resources >= 25:
+            for positions in pre_protection:
+                if castles_people.get(world[positions[0]].owner) != None:
+                    return "fort", positions[1]
+
+        if not is_alive(castles_people, enemy_terrain_near, world):
             to_build = [x for x in my_terrain if world[x].structure == "land"]
 
             if len(to_build) > 0:
                 return "farm", nearest_point(to_build, my_castles[0], world)
             elif len(conquerable_neutral_terrain) > 0:
                 return "conquer", nearest_point(conquerable_neutral_terrain, my_castles[-1], world)
-
-        if len(conquerable_neutral_terrain) > 0:
-            return "conquer", conquerable_neutral_terrain[random.randint(0, len(conquerable_neutral_terrain))]
 
         return "harvest", None
