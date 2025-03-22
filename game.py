@@ -2,7 +2,7 @@ import random
 import importlib
 import sys
 import logging
-from collections import namedtuple, defaultdict
+from collections import namedtuple
 from datetime import datetime, timedelta
 from multiprocessing import Process, Manager
 from time import sleep
@@ -144,6 +144,7 @@ def import_bot_logic(bot_type):
         sys.exit(1)
 
     return bot_class()
+
 
 class ToE:
     """
