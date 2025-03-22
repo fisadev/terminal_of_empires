@@ -34,41 +34,45 @@ class ToEUI:
 
         self.player_colors[player.name] = self.free_colors.pop(0)
 
-    def render(self, toe, turn_number, winner):
+    def render(self, toe, turn_number, winners=None):
         """
         Render the game state.
         """
-        self.render_world(toe, winner, blink_winner=False)
-        self.render_players_status(toe, turn_number, winner, blink_winner=False)
+        if winners:
+            winner_names = {winner.name for winner in winners}
+        else:
+            winner_names = set()
 
-        if winner:
+        self.render_world(toe, winner_names, blink_winners=False)
+        self.render_players_status(toe, turn_number, winner_names, blink_winners=False)
+
+        if winner_names:
             blink = True
             while True:
                 sleep(0.3)
-                self.render_world(toe, winner, blink_winner=blink)
-                self.render_players_status(toe, turn_number, winner, blink_winner=blink)
+                self.render_world(toe, winner_names, blink_winners=blink)
+                self.render_players_status(toe, turn_number, winner_names, blink_winners=blink)
                 blink = not blink
-
 
         sleep(self.turn_delay)
 
-    def render_world(self, toe, winner, blink_winner=False):
+    def render_world(self, toe, winner_names, blink_winners=False):
         """
         Render the world of the game.
         """
         for position, terrain in toe.world.items():
             with self.term.location(position.x * 2, position.y):
-                if winner and blink_winner and terrain.owner == winner.name:
+                if blink_winners and terrain.owner in winner_names:
                     print(f"{self.player_colors[None]}{ICONS[terrain.structure]}{self.term.normal}", end="")
                 else:
                     print(f"{self.player_colors[terrain.owner]}{ICONS[terrain.structure]}{self.term.normal}", end="")
 
-    def render_players_status(self, toe, turn_number, winner, blink_winner=False):
+    def render_players_status(self, toe, turn_number, winner_names, blink_winners=False):
         """
         Render the status of the players.
         """
         with self.term.location(0, toe.map_size.y):
-            print("Turn", turn_number, "| Stats:")
+            print("Turn", turn_number, "| Stats:                      ")
             player_stats = {
                 player.name: {CASTLE: 0, FARM: 0, FORT: 0, "tiles": 0}
                 for player in toe.players.values()
@@ -84,11 +88,18 @@ class ToEUI:
             for player in toe.players.values():
                 tiles = len([t for t in toe.world.values() if t.owner == player.name])
                 percent = int((tiles / total_tiles) * 100)
-                stats = f"{player.resources}$ {player_stats[player.name][CASTLE]}[] {player_stats[player.name][FARM]}// {player_stats[player.name][FORT]}<> {percent}%"
+                stats = (
+                    f"{player.resources}$ "
+                    f"{player_stats[player.name][CASTLE]}[] "
+                    f"{player_stats[player.name][FARM]}// "
+                    f"{player_stats[player.name][FORT]}<> "
+                    f"{player_stats[player.name]['tiles']}t "
+                    f"{percent}%"
+                )
 
                 if player.alive:
-                    if player is winner:
-                        if blink_winner:
+                    if player.name in winner_names:
+                        if blink_winners:
                             print(f"{self.player_colors[None]}{player}: {stats} WINNER!!{self.term.normal} Press ctrl-c to quit")
                         else:
                             print(f"{self.player_colors[player.name]}{player}: {stats} WINNER!!{self.term.normal} Press ctrl-c to quit")

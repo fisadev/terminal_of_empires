@@ -109,17 +109,18 @@ class BotLogic:
                     return "castle", random.choice(my_terrain)
                 
         if len(enemy_terrain_near) > 0:
-            if my_resources > 100:
-                return "conquer", nearest_point(enemy_terrain_near, my_castles[0], world, castle_enemy=True, castles_info=castles_people)
+            for my_position in my_terrain:
+                for position, terrain in world.items():
+                    if terrain.owner not in ("mine", None) and is_adjacent(position, my_position):
+                        if world[my_position].structure not in ("castle", "fort"):
+                            if my_resources >= 75:
+                                return "castle", my_position
             else:
-                return "harvest", None
-
-        elif len(pre_protection) > 0 and my_resources >= 25:
-            for positions in pre_protection:
-                if castles_people.get(world[positions[0]].owner) != None:
-                    return "fort", positions[1]
-
-        if not is_alive(castles_people, enemy_terrain_near, world):
+                if my_resources >= 100:
+                    return "conquer", nearest_point(enemy_terrain_near, my_castles[-1], world, objective="castle")
+                else:
+                    return "harvest", None
+        else:
             to_build = [x for x in my_terrain if world[x].structure == "land"]
 
             if len(to_build) > 0:

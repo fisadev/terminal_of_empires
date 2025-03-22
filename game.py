@@ -49,6 +49,7 @@ COMMS_AWAITING_ACTION = "awaiting_action"
 COMMS_ACTION_READY = "action_ready"
 COMMS_ACTION_FAILED = "action_failed"
 
+TILES_PER_CASTLE_LIMIT = 50
 
 Position = namedtuple("Position", "x y")
 Terrain = namedtuple("Terrain", "structure owner")
@@ -144,6 +145,7 @@ def import_bot_logic(bot_type):
 
     return bot_class()
 
+
 class ToE:
     """
     A game of Terrain of Empires.
@@ -223,15 +225,28 @@ class ToE:
                 else:
                     logging.info("%s action failed: %s", player, reason)
 
-            winner = self.get_winner()
-
             if self.ui:
-                self.ui.render(self, turn_number, winner)
+                self.ui.render(self, turn_number)
 
+            winner = self.get_winner()
             if winner:
-                return winner.name, turn_number
+                break
 
             turn_number += 1
+
+        if winner:
+            winners = [winner]
+        else:
+            # it's a tie! all alive players won
+            winners = [player for player in self.players.values() if player.alive]
+
+        for player in self.players.values():
+            player.stop_bot_logic()
+
+        if self.ui:
+            self.ui.render(self, turn_number, winners)
+
+        return winners, turn_number
 
     def run_player_turn(self, player):
         """
@@ -360,6 +375,18 @@ class ToE:
 
         if self.world[position].owner != player.name:
             return False, "can't build structures on terrain that you don't own"
+
+        if structure == CASTLE:
+            owned_castles = 0
+            owned_tiles = 0
+            for terrain in self.world.values():
+                if terrain.owner == player.name and terrain.structure == CASTLE:
+                    owned_castles += 1
+                if terrain.owner == player.name:
+                    owned_tiles += 1
+
+            if owned_castles and owned_tiles / owned_castles <= TILES_PER_CASTLE_LIMIT:
+                return False, f"can't build more castles, you need more tiles (you have {owned_castles} castles and {owned_tiles} tiles)"
 
         self.world[position] = Terrain(structure, player.name)
         player.resources -= cost
