@@ -73,7 +73,8 @@ class World:
                 if self.resources >= 25:
                     return empty_land
             case 'castle':
-                if self.resources >= 75:
+                if (self.resources >= 75 and
+                    len(self.mine) > (len(self.structures[CASTLE]) * 50)):
                     return empty_land
             case 'conquer':
                 return self.conquerable
