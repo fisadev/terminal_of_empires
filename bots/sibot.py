@@ -79,8 +79,8 @@ class BotLogic:
                 for position, terrain in world.items():
                     if terrain.owner not in ("mine", None) and is_adjacent(position, my_position):
                         if world[my_position].structure not in ("castle", "fort"):
-                            if my_resources >= 75:
-                                return "castle", my_position
+                            if my_resources >= 25:
+                                return "fort", my_position
             else:
                 if my_resources >= 100:
                     return "conquer", nearest_point(enemy_terrain_near, my_castles[-1], world, objective="castle")
