@@ -239,6 +239,9 @@ class ToE:
             # it's a tie! all alive players won
             winners = [player for player in self.players.values() if player.alive]
 
+        for player in self.players.values():
+            player.stop_bot_logic()
+
         if self.ui:
             self.ui.render(self, turn_number, winners)
 
