@@ -386,7 +386,7 @@ class ToE:
                     owned_tiles += 1
 
             if owned_castles and owned_tiles / owned_castles <= TILES_PER_CASTLE_LIMIT:
-                return False, "can't build more castles, you need more tiles"
+                return False, f"can't build more castles, you need more tiles (you have {owned_castles} castles and {owned_tiles} tiles)"
 
         self.world[position] = Terrain(structure, player.name)
         player.resources -= cost
