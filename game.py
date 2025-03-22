@@ -224,18 +224,21 @@ class ToE:
                 else:
                     logging.info("%s action failed: %s", player, reason)
 
-            winner = self.get_winner()
-
             if self.ui:
-                self.ui.render(self, turn_number, [winner] if winner else None)
+                self.ui.render(self, turn_number)
 
+            winner = self.get_winner()
             if winner:
-                return [winner], turn_number
+                break
 
             turn_number += 1
 
-        # it's a tie! all alive players won
-        winners = [player for player in self.players.values() if player.alive]
+        if winner:
+            winners = [winner]
+        else:
+            # it's a tie! all alive players won
+            winners = [player for player in self.players.values() if player.alive]
+
         if self.ui:
             self.ui.render(self, turn_number, winners)
 
