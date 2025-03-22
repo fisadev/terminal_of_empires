@@ -25,10 +25,10 @@ class BotLogic:
         def nearest_point(points, target, world, objective=None):
             """
             Encuentra el punto más cercano a 'target' dentro de 'points'.
-            
+
             target: (x, y) - Coordenada objetivo.
             points: [(x1, y1), (x2, y2), ...] - Lista de coordenadas.
-            
+
             Retorna la coordenada más cercana y su distancia.
             """
             min_distance = float('inf')
@@ -42,12 +42,11 @@ class BotLogic:
 
 
                 distance = math.sqrt((point.x - target.x)**2 + (point.y - target.y)**2)
-                
+
                 if distance < min_distance:
                     min_distance = distance
                     closest = point
 
-            logging.info(closest)
             return closest
 
         my_terrain = [position for position, terrain in world.items() if terrain.owner == "mine"]
@@ -87,15 +86,15 @@ class BotLogic:
                     return "conquer", nearest_point(enemy_terrain_near, my_castles[-1], world, objective="castle")
                 else:
                     return "harvest", None
-        else:             
+        else:
             to_build = [x for x in my_terrain if world[x].structure == "land"]
 
             if len(to_build) > 0:
                 return "farm", nearest_point(to_build, my_castles[0], world)
             elif len(conquerable_neutral_terrain) > 0:
-                return "conquer", nearest_point(conquerable_neutral_terrain, my_castles[-1], world)            
-        
+                return "conquer", nearest_point(conquerable_neutral_terrain, my_castles[-1], world)
+
         if len(conquerable_neutral_terrain) > 0:
-            return "conquer", conquerable_neutral_terrain[random.randint(0, len(conquerable_neutral_terrain))]                            
+            return "conquer", conquerable_neutral_terrain[random.randint(0, len(conquerable_neutral_terrain))]
 
         return "harvest", None
