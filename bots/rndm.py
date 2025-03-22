@@ -25,7 +25,7 @@ def get_adj_tiles(world, tiles):
     ]
 
 def get_conquerable(adjacents, resources):
-    logging.info(adjacents)
+    # logging.info(adjacents)
     return [
         t for t in adjacents if can_conquer(t, resources)
     ]
