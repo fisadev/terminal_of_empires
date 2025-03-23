@@ -15,7 +15,8 @@ from ui import ToEUI
 @click.option("--turn-timeout", type=float, default=0.5, help="Maximum seconds a player can take to think its turn.")
 @click.option("--log-path", type=click.Path(), default="./toe.log", help="Path for the log file of the game.")
 @click.option("--max-turns", type=int, default=None, help="Maximum number of turns to play (no limit if not specified).")
-def main(width, height, players, no_ui, ui_turn_delay, log_path, turn_timeout, max_turns):
+@click.option("--debug", is_flag=True, help="In debug mode, any errors in the bot will stop the game and the traceback will be shown.")
+def main(width, height, players, no_ui, ui_turn_delay, log_path, turn_timeout, max_turns, debug):
     """
     Run a game of Terminal of Empires.
     """
@@ -24,7 +25,7 @@ def main(width, height, players, no_ui, ui_turn_delay, log_path, turn_timeout, m
     else:
         ui = ToEUI(ui_turn_delay)
 
-    toe = ToE(width, height, ui=ui, log_path=log_path, turn_timeout=turn_timeout)
+    toe = ToE(width, height, ui=ui, log_path=log_path, turn_timeout=turn_timeout, debug=debug)
 
     for player_info in players.split(","):
         try:

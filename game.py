@@ -60,11 +60,13 @@ class Player:
     A player playing the game.
     Its bot logic is run in a subprocess.
     """
-    def __init__(self, name, bot_type, resources):
+    def __init__(self, name, bot_type, resources, debug):
         self.name = name
         self.bot_type = bot_type
         self.resources = resources
+        self.debug = debug
         self.alive = True
+        self.debug_bot_logic = None
 
         self.comms = None
         self.process = None
@@ -74,35 +76,43 @@ class Player:
 
     def start_bot_logic(self):
         """
-        Launch the bot logic subprocess.
+        Launch the bot logic subprocess, unless the game is in debug mode, in that case just
+        instantiate the bot.
         """
-        self.comms = Manager().dict()
-        self.comms["status"] = COMMS_IDLE
-        self.process = Process(target=bot_logic_subprocess_loop, args=(self.bot_type, self.comms))
-        self.process.start()
+        if self.debug:
+            self.debug_bot_logic = import_bot_logic(self.bot_type)
+        else:
+            self.comms = Manager().dict()
+            self.comms["status"] = COMMS_IDLE
+            self.process = Process(target=bot_logic_subprocess_loop, args=(self.bot_type, self.comms))
+            self.process.start()
 
     def stop_bot_logic(self):
         """
         Stop the bot logic subprocess.
         """
-        self.process.kill()
+        if not self.debug:
+            self.process.kill()
 
     def ask_action(self, map_size, world, timeout):
         """
         Ask the bot logic for an action, waiting up to timeout seconds.
         """
-        self.comms["action_params"] = (map_size, self.resources, world)
-        self.comms["status"] = COMMS_AWAITING_ACTION
+        if self.debug:
+            action = self.debug_bot_logic.turn(map_size, self.resources, world)
+            return True, action
+        else:
+            self.comms["action_params"] = (map_size, self.resources, world)
+            self.comms["status"] = COMMS_AWAITING_ACTION
 
-        start_time = datetime.now()
-        while datetime.now() - start_time < timeout:
-            if self.comms["status"] == COMMS_ACTION_READY:
-                return True, self.comms["action"]
-            elif self.comms["status"] == COMMS_ACTION_FAILED:
-                return False, self.comms["error"]
-            sleep(0.001)
+            start_time = datetime.now()
+            while datetime.now() - start_time < timeout:
+                if self.comms["status"] == COMMS_ACTION_READY:
+                    return True, self.comms["action"]
+                elif self.comms["status"] == COMMS_ACTION_FAILED:
+                    return False, self.comms["error"]
 
-        return False, f"timeout, did not return an action in {timeout.total_seconds()} seconds"
+            return False, f"timeout, did not return an action in {timeout.total_seconds()} seconds"
 
 
 def bot_logic_subprocess_loop(bot_type, comms):
@@ -122,7 +132,6 @@ def bot_logic_subprocess_loop(bot_type, comms):
             except Exception as err:
                 comms["error"] = repr(err)
                 comms["status"] = COMMS_ACTION_FAILED
-        sleep(0.001)
 
 
 def import_bot_logic(bot_type):
@@ -150,10 +159,11 @@ class ToE:
     """
     A game of Terrain of Empires.
     """
-    def __init__(self, width, height, ui=None, log_path=None, turn_timeout=0.5):
+    def __init__(self, width, height, ui=None, log_path=None, turn_timeout=0.5, debug=False):
         self.map_size = Position(width, height)
         self.ui = ui
         self.turn_timeout = timedelta(seconds=turn_timeout)
+        self.debug = debug
 
         self.players = {}
         self.players_comms = {}
@@ -186,7 +196,7 @@ class ToE:
                 if self.world[castle_position].structure == LAND:
                     break
 
-        player = Player(name, bot_type, resources=0)
+        player = Player(name, bot_type, resources=0, debug=self.debug)
 
         self.players[name] = player
         self.world[castle_position] = Terrain(CASTLE, name)
