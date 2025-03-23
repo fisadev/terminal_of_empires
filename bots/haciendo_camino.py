@@ -111,9 +111,10 @@ class Strategy:
     def fortify(self):
         fortification_max_benefit = max(self.insights.where_to_fort)
 
-        position_to_fortify = self.insights.where_to_fort[fortification_max_benefit]
+        positions_to_fortify = self.insights.where_to_fort[fortification_max_benefit]
+        position = random_choice_from_set(positions_to_fortify)
 
-        return FORT, position_to_fortify
+        return FORT, position
 
     def decide_to_farm(self):
         if self.my_resources < STRUCTURE_COST[FARM]:
@@ -148,10 +149,6 @@ class Strategy:
         can_afford = any(cost for cost in self.insights.where_to_expand.keys() if cost <= self.my_resources)
         costs = [cost for cost in self.insights.where_to_expand.keys()]
         resources = self.my_resources
-        logging.warning("AFFORD %s", can_afford)
-        logging.warning("costs %s", costs)
-        logging.warning("resources %s", resources)
-        logging.warning("WHERE TO EXPAND %s", self.insights.where_to_expand)
 
         if can_afford and random.random() <= 0.8:
             return True
@@ -166,27 +163,21 @@ class Strategy:
         return CONQUER, position_to_conquer
 
     def select_action(self):
-        logging.warning("ACTION")
         if not self.my_resources:
-            logging.warning("NO RESOURCES %s", self.my_resources)
             return self.harvest()
 
         build_castle = self.build_castle()
         if build_castle:
             return build_castle
-        logging.warning("no castle")
 
         if self.decide_to_fortify():
             return self.fortify()
-        logging.warning("no fortify")
 
         if self.decide_to_farm():
             return self.farm()
-        logging.warning("no farm")
 
         if self.decide_to_conquer():
             return self.conquer()
-        logging.warning("no conquer")
 
         return self.harvest()
 
@@ -299,11 +290,8 @@ class BotLogic:
 
         for tile in my_tiles:
             adjacent_positions = adjacents(tile, map_size)
-            logging.warning("ADJACENTS %s", adjacent_positions)
 
             not_mine = adjacent_positions - my_tiles
-            logging.warning(" MINE %s", my_tiles)
-            logging.warning("NOT MINE %s", not_mine)
             for not_my_tile in not_mine:
                 cost = self._get_conquer_cost(not_my_tile, world, tiles_by_type_and_owner, map_size)
 
