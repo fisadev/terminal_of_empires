@@ -211,16 +211,16 @@ Have fun!
 
 If you want to be super secretive about your high-tech bot, there's a way of playing with others without sharing your bot code!
 
-Let's say you, Alice, have a bot in a file called `alice_bot.py` that you don't want to share before the Big Tournament.
-Bob just invited you to play a practice match against him, and you want to play with your bot but without him being able to see your code.
+Let's say you, Alice, have a bot in a file called `bots/alice_bot.py` that you don't want to share before the Big Tournament.
+Bob just invited you to play a practice match and you want to, but without revealing your secret winning formula.
 
-So first you launch a player server in your machine, like this:
+To play the match first launch a player server in your machine, like this:
 
 ```bash
 python player_server.py --player alice:alice_bot
 ```
 
-And then you tell Bob to run the game with a player pointing to your IP address, like this:
+And then tell Bob to run the game with a player pointing to your IP address, like this:
 
 ```bash
 python toe.py --players bob:bobs_bot,alice:YOUR_IP_ADDRESS
