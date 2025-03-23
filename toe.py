@@ -30,7 +30,7 @@ def main(width, height, players, no_ui, ui_turn_delay, log_path, turn_timeout, m
     scoreboard = defaultdict(int)
     for game_number in range(repeat):
         if no_ui:
-            print(f"Starting game {game_number + 1} of {repeat}...")
+            print(f"Playing game {game_number + 1} of {repeat}...")
             ui = None
         else:
             ui = ToEUI(ui_turn_delay)
