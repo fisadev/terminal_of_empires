@@ -1,3 +1,6 @@
 blessings
 click
+fastapi
+uvicorn[standard]
+psutil
 requests

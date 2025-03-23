@@ -44,7 +44,7 @@ python toe.py --help
 
 For instance, `--ui-turn-delay` is a very useful one if you want to play faster matches :)
 
-Also, each match produces a very detailed `toe.log` with all the actions the bots tried to play and their results. 
+Also, each match produces a very detailed `toe.log` with all the actions the bots tried to play and their results.
 You can even query the log live, while the game is playing.
 
 # Making your own bot
@@ -186,7 +186,7 @@ The costs are:
 
 - Land: 1 resource.
 - Farm: 2 resources.
-- Land or Farm that has a Fort or a Castle adjacent to it (not diagonally): 25 resources. 
+- Land or Farm that has a Fort or a Castle adjacent to it (not diagonally): 25 resources.
   **This is how Forts and Castles protect nearby land!**
 - Fort: 50 resources.
 - Castle: 100 resources.
@@ -201,7 +201,7 @@ If you order a valid conquer action, the result is that the enemy structure will
 
 # Bot examples
 
-You can find more examples in the `bots/` directory. 
+You can find more examples in the `bots/` directory.
 Take a look at them, their code is fairly simple and easy to understand, they're meant as examples for you to learn from :)
 
 Have fun!
