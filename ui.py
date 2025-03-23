@@ -130,4 +130,5 @@ class ToEUI:
                 yield self
         finally:
             print(self.term.normal)
-            self.render(*self.last_args, running_in_fullscreen=False)
+            if self.last_args is not None:
+                self.render(*self.last_args, running_in_fullscreen=False)
