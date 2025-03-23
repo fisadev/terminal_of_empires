@@ -20,6 +20,13 @@ def random_choice_from_set(my_set):
     return random.choice(list(my_set))
 
 
+def distance(p1, p2):
+    """
+    Manhattan distance
+    """
+    return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
+
+
 def is_adjacent(position1, position2):
     """
     Return True if the two positions are adjacent, False otherwise.
@@ -50,6 +57,7 @@ class Insights:
     tiles_by_type_and_owner: dict
     forts_and_castles: set
     my_tiles: set
+    borders: set
     protected_terrain: set
     unprotected_terrain: set
     where_to_fort: dict
@@ -204,10 +212,13 @@ class BotLogic:
         return my_tiles
 
     @staticmethod
-    def _get_protected_and_uprotected_tiles(my_tiles, forts_and_castles, map_size):
-        protected, unprotected = set(), set()
+    def _get_borders_protected_and_uprotected_tiles(my_tiles, forts_and_castles, map_size):
+        borders, protected, unprotected = set(), set(), set()
         for tile in my_tiles:
             adjacent_positions = adjacents(tile, map_size)
+
+            if any(adj not in my_tiles for adj in adjacent_positions):
+                borders.add(tile)
 
             # protected terrain: is a fort or castle or is adjacent to one of them
             if tile in forts_and_castles:
@@ -217,7 +228,7 @@ class BotLogic:
             else:
                 unprotected.add(tile)
 
-        return protected, unprotected
+        return borders, protected, unprotected
 
     @staticmethod
     def _get_where_to_fort(unprotected_terrain, map_size):
@@ -303,7 +314,7 @@ class BotLogic:
         enemies, tiles_by_type_and_owner = self._get_enemies_and_tiles_by_type_and_owner(world)
         forts_and_castles = tiles_by_type_and_owner[CASTLE][MINE].union(tiles_by_type_and_owner[FORT][MINE])
         my_tiles = self._get_my_tiles(tiles_by_type_and_owner)
-        protected_terrain, unprotected_terrain = self._get_protected_and_uprotected_tiles(my_tiles, forts_and_castles, map_size)
+        borders, protected_terrain, unprotected_terrain = self._get_borders_protected_and_uprotected_tiles(my_tiles, forts_and_castles, map_size)
         where_to_fort = self._get_where_to_fort(unprotected_terrain, map_size)
         useful_to_expand = self._get_useful_to_expand(forts_and_castles, my_tiles, map_size)
         where_to_farm = self._get_where_to_plant_a_farm(tiles_by_type_and_owner, protected_terrain)
@@ -314,6 +325,7 @@ class BotLogic:
             tiles_by_type_and_owner,
             forts_and_castles,
             my_tiles,
+            borders,
             protected_terrain,
             unprotected_terrain,
             where_to_fort,
