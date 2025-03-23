@@ -183,6 +183,28 @@ class Strategy:
 
         return CONQUER, position_to_conquer
 
+    def decide_to_kill_mode(self):
+        if self.insights.near_enemy_castle.distance < 5:
+            return True
+
+        return False
+
+    def kill_mode_action(self):
+        if self.insights.near_enemy_castle.cost_to_conquer <= self.my_resources:
+            return CONQUER, self.insights.near_enemy_castle.near_tile_to_expand
+
+        return self.harvest()
+
+    def decide_defense_mode(self):
+        if self.insights.near_enemy_tile.distance < 4:
+            if self.insights.near_enemy_tile.near_tile_mine in self.insights.unprotected_terrain:
+                return True
+
+        return False
+
+    def defense_mode_action(self):
+        return FORT, self.insights.near_enemy_tile.near_tile_mine
+
     def select_action(self):
         if not self.my_resources:
             return self.harvest()
@@ -190,6 +212,9 @@ class Strategy:
         build_castle = self.build_castle()
         if build_castle:
             return build_castle
+
+        if self.decide_to_kill_mode():
+            return self.kill_mode_action()
 
         if self.decide_to_fortify():
             return self.fortify()
