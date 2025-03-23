@@ -226,4 +226,4 @@ And then tell Bob to run the game with a player pointing to your IP address, lik
 python toe.py --players bob:bobs_bot,alice:YOUR_IP_ADDRESS
 ```
 
-And that's it! The game will run with Bob's bot running in his machine and your bot running in yours :)
+And that's it! The game will play with Bob's bot running in his machine and your bot running in yours :)
