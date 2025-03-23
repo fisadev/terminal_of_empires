@@ -1,8 +1,20 @@
 import logging
+import random
 from collections import defaultdict
 from dataclasses import dataclass
 
-from game import FORT, LAND, FARM, CASTLE, MINE, CONQUER, HARVEST, STRUCTURE_COST, CONQUER_COSTS
+from game import (
+    FORT,
+    LAND,
+    FARM,
+    CASTLE,
+    MINE,
+    CONQUER,
+    HARVEST,
+    STRUCTURE_COST,
+    CONQUER_COSTS,
+    TILES_PER_CASTLE_LIMIT
+)
 
 
 def is_adjacent(position1, position2):
@@ -40,6 +52,54 @@ class Insights:
     useful_to_expand: set
     where_to_farm: set
     where_to_expand: dict
+
+
+class Strategy:
+    def __init__(self, insights: Insights, my_resources: int):
+        self.insights = insights
+        self.my_resources = my_resources
+
+    def harvest(self):
+        return HARVEST, None
+
+    def build_castle(self):
+        my_castles = len(self.insights.tiles_by_type_and_owner[CASTLE][MINE])
+        my_tiles = len(self.insights.my_tiles)
+
+        size_enough = my_tiles / my_castles + 1 >= TILES_PER_CASTLE_LIMIT
+        money_enough = self.my_resources >= STRUCTURE_COST
+
+        if size_enough and money_enough:
+            # replace a random fort, land or farm
+            my_forts = self.insights.tiles_by_type_and_owner[FORT][MINE]
+            my_lands = self.insights.tiles_by_type_and_owner[LAND][MINE]
+            my_farms = self.insights.tiles_by_type_and_owner[FARM][MINE]
+
+            if my_forts:
+                return CASTLE, random.choice(my_forts)
+            elif my_lands:
+                return CASTLE, random.choice(my_lands)
+            elif my_farms:
+                return CASTLE, random.choice(my_farms)
+
+        return None
+
+
+    def select_action(self):
+        if not self.my_resources:
+            return self.harvest()
+
+        build_castle = self.build_castle()
+
+        if build_castle:
+            return build_castle
+
+
+
+
+
+
+
 
 
 class BotLogic:
