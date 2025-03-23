@@ -171,6 +171,12 @@ class Strategy:
         return False
 
     def conquer(self):
+        if self.insights.near_enemy_castle.cost_to_conquer < self.my_resources:
+            return CONQUER, self.insights.near_enemy_castle.near_tile_to_expand
+
+        if self.insights.near_enemy_tile.cost_to_conquer < self.my_resources:
+            return CONQUER, self.insights.near_enemy_tile.near_tile_to_expand
+
         max_affordable_tile = max(cost for cost in self.insights.where_to_expand_by_cost.keys() if cost <= self.my_resources)
 
         position_to_conquer = random_choice_from_set(self.insights.where_to_expand_by_cost[max_affordable_tile])
