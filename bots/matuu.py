@@ -1,5 +1,4 @@
 import math
-import random
 from collections import Counter
 import os
 import logging
@@ -47,10 +46,11 @@ def distance(position1, position2):
 
     return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
-
+DEFENSIVE_MODE = "defensive"
+AGGRESSIVE_MODE = "aggressive"
 MODES = (
-    "defensive",
-    "aggressive",
+    DEFENSIVE_MODE,
+    AGGRESSIVE_MODE,
 )
 
 COST_STRUCT_TO_CONQUER = (
@@ -63,40 +63,51 @@ COST_STRUCT_TO_CONQUER = (
 
 def world_saver(func):
     """
-    Save the world in the previous_world attribute.
+    I use this decorator to do some things after to return the action.
+    - Save the world in the previous_world attribute.
+    - Update the tick_since_harvest attribute.
+    - Make the correct action, avoiding to lose the turn.
     """
     def wrapper(self, *args, **kwargs):
-        result = func(self, *args, **kwargs)
+        action, pos = func(self, *args, **kwargs)
+        log(f"action: {action}, pos: {pos}, self {self}")
+        self.my_resources = args[1]
         self.previous_world = args[2]
+        if action == "harvest":
+            self.tick_since_harvest = 0
+        else:
+            self.tick_since_harvest += 1
+
+        # this is an attemp to make the correct action, avoiding to lose the turn
+        result = self.safe_action(action, pos, self.previous_world, self.my_resources)
+        log(f"action: {result}")
         self.previous_action = result
-        log(f"action: {self.previous_action}")
         return result
     return wrapper
 
 
 class BotLogic:
     my_castles = []
-    mode = "defensive"
+    mode = DEFENSIVE_MODE
     can_build_castle = False
 
     previous_world = {}
     previous_action = "harvest", None
     lost_land = []
-    tick = 0
+    tick_since_harvest = 0
 
     @world_saver
     def turn(self, map_size, my_resources, world):
         """
         I want to build a bot that combines a 65% of aggressive and 35% of defensive.
         """
-        self.tick += 1
         self.my_castles = [
             position for position, terrain in world.items()
             if terrain.owner == "mine" and terrain.structure == "castle"
         ]
         self.enemy_castles = [
             position for position, terrain in world.items()
-            if terrain.owner not in ("mine", None) and terrain.structure == "castle"
+            if terrain.owner != "mine" and terrain.structure == "castle"
         ]
         self.my_terrains = [
             position for position, terrain in world.items()
@@ -108,6 +119,7 @@ class BotLogic:
         ]
         self.can_build_castle = self._can_build_castle(my_resources, world)
         stats = self._calc_stats_from_world(world)
+        self.enemies_amount = len(stats["participants"]) - 1
 
         self.lost_land = self._conquered_land(world)
         log("I lost in the last turn: %s", self.lost_land)
@@ -116,15 +128,19 @@ class BotLogic:
             return "harvest", None
         
         for inmediate_action, elem in self._has_inmediate_action(world):
-            pos, terrain = elem
+            pos, _ = elem
             if self._determine_cost_to_conquer(pos, world) <= my_resources:
                 log("inmediate_action: %s, pos: %s", inmediate_action, pos)
                 return inmediate_action, pos
+            
+        if self.tick_since_harvest > 10:
+            return "harvest", None
 
-        if stats["percentage_of_lands"]["mine"] > 0.08:
-            self.mode = "aggressive"
+        percent_to_change_mode = 0.1 - (self.enemies_amount * 0.01)
+        if stats["percentage_of_lands"]["mine"] > percent_to_change_mode:
+            self.mode = AGGRESSIVE_MODE
         else:
-            self.mode = "defensive"
+            self.mode = DEFENSIVE_MODE
         
         log("mode: %s", self.mode)
 
@@ -132,22 +148,27 @@ class BotLogic:
             # first part of the game: get resource and defend
             # make farms and forts as concentric circles around the castle
             my_lands = [position for position, terrain in world.items()
-                                if terrain.owner == "mine" and terrain.structure == "land"]
+                        if terrain.owner == "mine" and terrain.structure == "land"]
             if my_lands:
                 if self.previous_action[0] == "conquer" and len(self.lost_land) > 0:
                     lost = Counter(self.lost_land).most_common()
                     for land, count in lost:
                         if land in self.terrain_available_to_act:
-                            return ("castle", land) if self.can_build_castle else ("fort", land)
+                            if self.can_build_castle:
+                                return "castle", land
+                            else:
+                                if self._determine_cost_to_conquer(land, world) <= my_resources:
+                                    return "fort", land
+                                else:
+                                    return "farm", land
                     
-                # we can build a fort!
                 dist_castle = min([
                     int(round(distance(my_lands[0], castle)))
                     for castle in self.my_castles
                 ])
                 
                 log("dist_castle: %s", dist_castle)
-                if dist_castle > 1 and dist_castle <5 and my_resources > 100:
+                if dist_castle > 1 and dist_castle <5 and my_resources > 50:
                     return "fort", my_lands[0]
                 elif self.can_build_castle:
                     return "castle", my_lands[0]
@@ -155,7 +176,9 @@ class BotLogic:
                     return "farm", my_lands[0]
             else:
                 neutral_lands = self._get_neutral_land_around_castle(self.my_castles[-1], world)
-                return "conquer", random.choice(neutral_lands)
+                for land in neutral_lands:
+                    if self._determine_cost_to_conquer(land, world) <= my_resources:
+                        return "conquer", land
         elif self.mode == "aggressive":
             # second part of the game: attack
             # find the closest enemy castle to my lands
@@ -253,9 +276,21 @@ class BotLogic:
         if target_position in self.my_terrains:
             return 0
         costs = dict(COST_STRUCT_TO_CONQUER)
+        cost_list = [costs[world[target_position].structure]]
         for adj_pos in get_adjacent_positions(target_position):
             if adj_pos in world:
                 if world[adj_pos].owner not in ("mine", None) and world[adj_pos].structure in ("castle", "fort"):
-                    return costs["near_castle"]
-        return costs[world[target_position].structure]
+                    cost_list.append(costs["near_castle"])
+        return max(cost_list)
+
+    def safe_action(self, action, position, world, my_resources):
+        """
+        Try to minimaze the risk of losing the turn.
+        """
+        if action == "conquer":
+            if self._determine_cost_to_conquer(position, world) <= my_resources:
+                return action, position
+            else:
+                return "harvest", None
+        return action, position
         
