@@ -17,6 +17,8 @@ logging.basicConfig(
 
 app = FastAPI()
 
+player_bot = None
+
 
 class TurnRequest(BaseModel):
     map_size: tuple
@@ -49,8 +51,8 @@ def turn(body: TurnRequest):
     map_size = deserialize_map_size(body.map_size)
     world = deserialize_world(body.world)
 
-    player.resources = body.resources
-    action_committed, action = player.ask_action(
+    player_bot.resources = body.resources
+    action_committed, action = player_bot.ask_action(
         map_size=map_size, world=world, timeout=None
     )
 
@@ -67,14 +69,17 @@ def turn(body: TurnRequest):
     help="Player, specified as player_name:bot_type",
 )
 def main(player):
+    global player_bot
+
+
     _print_ips()
 
     name, bot_type = player.split(":")
 
     print(f"Player: {name}, Bot Type: {bot_type}")
 
-    player = Player(name=name, bot_type=bot_type, debug=True)
-    player.start_bot_logic()
+    player_bot = Player(name=name, bot_type=bot_type, debug=True)
+    player_bot.start_bot_logic()
 
     uvicorn.run(app=app, host="0.0.0.0", port=8000)
 
