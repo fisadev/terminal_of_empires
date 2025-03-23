@@ -212,51 +212,61 @@ class ToE:
         of turns is reached.
         Return the winner and the number of turns played.
         """
-        logging.info("starting game loop")
+        try:
+            logging.info("starting game loop")
 
-        logging.info("starting the subprocesses for the player bots logic")
-        for player in self.players.values():
-            player.start_bot_logic()
+            logging.info("starting the subprocesses for the player bots logic")
+            for player in self.players.values():
+                player.start_bot_logic()
 
-        turn_number = 1
-        while max_turns is None or turn_number < max_turns:
-            players = list(self.players.values())
-            random.shuffle(players)
-            logging.info("turn %s order: %s", turn_number, ",".join(p.name for p in players))
+            turn_number = 1
+            while max_turns is None or turn_number < max_turns:
+                players = list(self.players.values())
+                random.shuffle(players)
+                logging.info("turn %s order: %s", turn_number, ",".join(p.name for p in players))
 
-            for player in players:
-                if not player.alive:
-                    # dead players don't play anymore
-                    continue
+                for player in players:
+                    if not player.alive:
+                        # dead players don't play anymore
+                        continue
 
-                turn_ok, reason = self.run_player_turn(player)
-                if turn_ok:
-                    logging.info("%s action ran ok: %s", player, reason)
-                else:
-                    logging.info("%s action failed: %s", player, reason)
+                    turn_ok, reason = self.run_player_turn(player)
+                    if turn_ok:
+                        logging.info("%s action ran ok: %s", player, reason)
+                    else:
+                        logging.info("%s action failed: %s", player, reason)
+
+                if self.ui:
+                    self.ui.render(self, turn_number)
+
+                winner = self.get_winner()
+                if winner:
+                    break
+
+                turn_number += 1
+
+            if winner:
+                winners = [winner]
+            else:
+                # it's a tie! all alive players won
+                winners = [player for player in self.players.values() if player.alive]
+
+            self.stop_players_bots()
 
             if self.ui:
-                self.ui.render(self, turn_number)
+                self.ui.render(self, turn_number, winners)
 
-            winner = self.get_winner()
-            if winner:
-                break
+            return winners, turn_number
+        except KeyboardInterrupt:
+            self.stop_players_bots()
+            sys.exit(1)
 
-            turn_number += 1
-
-        if winner:
-            winners = [winner]
-        else:
-            # it's a tie! all alive players won
-            winners = [player for player in self.players.values() if player.alive]
-
+    def stop_players_bots(self):
+        """
+        Stop the bot logic subprocesses for all players.
+        """
         for player in self.players.values():
             player.stop_bot_logic()
-
-        if self.ui:
-            self.ui.render(self, turn_number, winners)
-
-        return winners, turn_number
 
     def run_player_turn(self, player):
         """
