@@ -60,7 +60,7 @@ class Player:
     A player playing the game.
     Its bot logic is run in a subprocess.
     """
-    def __init__(self, name, bot_type, resources, debug):
+    def __init__(self, name, bot_type, resources=0, debug=False):
         self.name = name
         self.bot_type = bot_type
         self.resources = resources
@@ -138,21 +138,25 @@ def import_bot_logic(bot_type):
     """
     Try to import the bot logic module and instantiate its BotLogic class.
     """
-    try:
-        bot_module = importlib.import_module("bots." + bot_type)
-    except ImportError:
-        print(f"Could not import bot module named {bot_type}.")
-        print(f"Are you sure there's a bots/{bot_type}.py file and it's a valid python module?")
-        sys.exit(1)
+    if bot_type.count(".") == 3:
+        from remote_bot_proxy import RemoteBotLogic  # prevent circular import
+        return RemoteBotLogic(f"http://{bot_type}:8000")
+    else:
+        try:
+            bot_module = importlib.import_module("bots." + bot_type)
+        except ImportError:
+            print(f"Could not import bot module named {bot_type}.")
+            print(f"Are you sure there's a bots/{bot_type}.py file and it's a valid python module?")
+            sys.exit(1)
 
-    try:
-        bot_class = getattr(bot_module, "BotLogic")
-    except AttributeError:
-        print(f"Could not find BotLogic class in bot module named {bot_type}.")
-        print(f"Are you sure there's a BotLogic class defined in bots/{bot_type}.py?")
-        sys.exit(1)
+        try:
+            bot_class = getattr(bot_module, "BotLogic")
+        except AttributeError:
+            print(f"Could not find BotLogic class in bot module named {bot_type}.")
+            print(f"Are you sure there's a BotLogic class defined in bots/{bot_type}.py?")
+            sys.exit(1)
 
-    return bot_class()
+        return bot_class()
 
 
 class ToE:

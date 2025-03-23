@@ -3,3 +3,4 @@ click
 fastapi
 uvicorn[standard]
 psutil
+requests
