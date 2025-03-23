@@ -14,9 +14,9 @@ class RemoteBotLogic:
         """
         Call the bot server to get the action.
         """
-        response = requests.post(f'{self.bot_server}/turn', json={
-            'map_size': map_size,
-            'resources': my_resources,
-            'world': serialize_world(world),
+        response = requests.post(f"{self.bot_server}/turn", json={
+            "map_size": map_size,
+            "resources": my_resources,
+            "world": serialize_world(world),
         })
         return deserialize_action(response.json()["action"])
