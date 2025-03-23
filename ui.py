@@ -115,8 +115,3 @@ class ToEUI:
         """
         with self.term.fullscreen(), self.term.hidden_cursor():
             yield self
-
-
-if __name__ == "__main__":
-    app = ToEUI()
-    app.run()
