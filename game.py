@@ -91,7 +91,7 @@ class Player:
         """
         Stop the bot logic subprocess.
         """
-        if not self.debug:
+        if not self.debug and self.process:
             self.process.kill()
 
     def ask_action(self, map_size, world, timeout):
@@ -214,6 +214,7 @@ class ToE:
         """
         try:
             logging.info("starting game loop")
+            winners = None
 
             logging.info("starting the subprocesses for the player bots logic")
             for player in self.players.values():
@@ -239,26 +240,27 @@ class ToE:
                 if self.ui:
                     self.ui.render(self, turn_number)
 
-                winner = self.get_winner()
-                if winner:
-                    break
-
+                self.update_alive_players()
                 turn_number += 1
 
-            if winner:
-                winners = [winner]
-            else:
-                # it's a tie! all alive players won
-                winners = [player for player in self.players.values() if player.alive]
+                if len([player for player in self.players.values() if player.alive]) == 1:
+                    break
 
-            self.stop_players_bots()
+            winners = [player for player in self.players.values() if player.alive]
+            if winners:
+                logging.info("%s won!", " and ".join(winner.name for winner in winners))
 
-            if self.ui:
-                self.ui.render(self, turn_number, winners)
-
-            return winners, turn_number
+            try:
+                if self.ui:
+                    self.ui.render(self, turn_number, winners)
+            except KeyboardInterrupt:
+                pass
         except KeyboardInterrupt:
+            raise
+        finally:
             self.stop_players_bots()
+
+        return winners, turn_number
 
     def stop_players_bots(self):
         """
@@ -428,10 +430,9 @@ class ToE:
             if candidate in self.world
         ]
 
-    def get_winner(self):
+    def update_alive_players(self):
         """
-        Return the winner if there is one, or None if the game is still ongoing. Mark dead players
-        as dead.
+        Mark dead players as dead.
         """
         # who has castles?
         players_with_castles = set()
@@ -447,8 +448,3 @@ class ToE:
 
             if was_alive and not still_alive:
                 logging.info("%s died! It no longer has castles", player)
-
-        if len(players_with_castles) == 1:
-            winner = self.players[players_with_castles.pop()]
-            logging.info("%s won!", winner)
-            return winner
