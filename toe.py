@@ -6,6 +6,8 @@ import click
 from game import ToE
 from ui import ToEUI
 
+BAN_LIST = {"orden66"}
+
 
 @click.command()
 @click.option("--width", type=int, default=40, help="The width of the map.")
@@ -18,7 +20,8 @@ from ui import ToEUI
 @click.option("--max-turns", type=int, default=None, help="Maximum number of turns to play (no limit if not specified).")
 @click.option("--debug", is_flag=True, help="In debug mode, any errors in the bot will stop the game and the traceback will be shown.")
 @click.option("--repeat", type=int, default=1, help="Repeat the game N times and return stats about winners of the games.")
-def main(width, height, players, no_ui, ui_turn_delay, log_path, turn_timeout, max_turns, debug, repeat):
+@click.option("--ignore-bans", is_flag=True, help="Ignore bots banned for being dangerous code.")
+def main(width, height, players, no_ui, ui_turn_delay, log_path, turn_timeout, max_turns, debug, repeat, ignore_bans):
     """
     Run a game of Terminal of Empires.
 
@@ -50,6 +53,10 @@ def main(width, height, players, no_ui, ui_turn_delay, log_path, turn_timeout, m
                 bot_type = bot_type.lower()
             except ValueError:
                 print(f"Invalid player info: {player_info}. Should be name:bot_type")
+                sys.exit(1)
+
+            if bot_type in BAN_LIST and not ignore_bans:
+                print(f"Bot {bot_type} is banned for being dangerous. You can override this with --ignore-bans.")
                 sys.exit(1)
 
             toe.add_player(name, bot_type, castle_position=castle_position)

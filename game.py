@@ -169,6 +169,7 @@ class ToE:
         self.turn_timeout = timedelta(seconds=turn_timeout)
         self.debug = debug
 
+
         self.players = {}
         self.players_comms = {}
         self.world = {
