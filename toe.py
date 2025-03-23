@@ -49,11 +49,13 @@ def main(width, height, players, no_ui, ui_turn_delay, log_path, turn_timeout, m
 
     if ui:
         with ui.show():
-            winners, turns_played = toe.play(max_turns=max_turns)
+            result = toe.play(max_turns=max_turns)
     else:
-        winners, turns_played = toe.play(max_turns=max_turns)
+        result = toe.play(max_turns=max_turns)
 
-    print(" and ".join(p.name for p in winners), "won in", turns_played, "turns!")
+    if result:
+        winners, turns_played = result
+        print(" and ".join(p.name for p in winners), "won in", turns_played, "turns!")
 
 
 if __name__ == '__main__':
