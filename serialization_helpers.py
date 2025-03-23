@@ -1,12 +1,22 @@
 from game import Position, Terrain
 
 
+def serialize_world(world):
+    """
+    Serialize world data to jsonificable data.
+    """
+    return {
+        ",".join(map(str, tuple(position))): tuple(terrain)
+        for position, terrain in world.items()
+    }
+
+
 def deserialize_world(raw_world):
     """
     Deserialize jsonified world data.
     """
     return {
-        Position(*raw_position): Terrain(*raw_terrain)
+        Position(*map(int, raw_position.split(","))): Terrain(*raw_terrain)
         for raw_position, raw_terrain in raw_world.items()
     }
 
