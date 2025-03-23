@@ -17,7 +17,7 @@ from game import (
     TILES_PER_CASTLE_LIMIT
 )
 
-EnemyTile = namedtuple("EnemyTile", "enemy_posi, namedtupletion owner structure near_tile_mine near_tile_to_expand cost_to_conquer")
+EnemyTile = namedtuple("EnemyTile", "enemy_position owner structure near_tile_mine near_tile_to_expand cost_to_conquer distance")
 
 def random_choice_from_set(my_set):
     return random.choice(list(my_set))
@@ -69,6 +69,8 @@ class Insights:
     useful_to_expand: set
     where_to_farm: set
     where_to_expand_by_cost: dict
+    near_enemy_castle: EnemyTile
+    near_enemy_tile: EnemyTile
 
 
 class Strategy:
@@ -306,7 +308,7 @@ class BotLogic:
         for structure, owners in tiles_by_type_and_owner.items():
             for owner, positions in owners.items():
                 if owner != MINE:
-                    enemy_tiles = enemy_tiles.union(positions)
+                    all_enemy_tiles = all_enemy_tiles.union(positions)
 
         return all_enemy_tiles
 
@@ -319,8 +321,32 @@ class BotLogic:
 
         return enemy_castles
 
+    def _get_near_enemy_castle_to_this_tile(self, tile, enemy_castles):
+        near_enemy_castle = None
+        min_distance = float("inf")
 
-    def _get_where_to_expand(self, borders, my_tiles, world, tiles_by_type_and_owner, map_size, near_enemy_castle, near_enemy_tile):
+        for enemy_castle in enemy_castles:
+            d = distance(tile, enemy_castle)
+            if d < min_distance:
+                min_distance = d
+                near_enemy_castle = enemy_castle
+
+        return near_enemy_castle, min_distance
+
+    def _get_near_enemy_tile_to_this_tile(self, tile, all_enemy_tiles):
+        near_enemy_tile = None
+        min_distance = float("inf")
+
+        for enemy_tile in all_enemy_tiles:
+            d = distance(tile, enemy_tile)
+            if d < min_distance:
+                min_distance = d
+                near_enemy_tile = enemy_tile
+
+        return near_enemy_tile, min_distance
+
+
+    def _get_where_to_expand(self, borders, my_tiles, world, tiles_by_type_and_owner, map_size, all_enemy_tiles, enemy_castles):
         where_to_expand_by_cost = defaultdict(set) # {cost: {position,}}
         near_enemy_castle: Optional[EnemyTile] = None
         near_enemy_tile: Optional[EnemyTile] = None
@@ -333,8 +359,33 @@ class BotLogic:
                 cost = self._get_conquer_cost(not_my_tile, world, tiles_by_type_and_owner, map_size)
 
                 where_to_expand_by_cost[cost].add(not_my_tile)
+                tmp_near_enemy_castle, tmp_distance_castle = self._get_near_enemy_castle_to_this_tile(not_my_tile, enemy_castles)
+                tmp_near_enemy_tile, tmp_distance_tile = self._get_near_enemy_tile_to_this_tile(not_my_tile, all_enemy_tiles)
 
-        return where_to_expand_by_cost
+                if not near_enemy_castle or tmp_distance_castle < near_enemy_castle.distance:
+                    near_enemy_castle = EnemyTile(
+                        enemy_position=tmp_near_enemy_castle,
+                        owner=world[tmp_near_enemy_castle].owner,
+                        structure=world[tmp_near_enemy_castle].structure,
+                        near_tile_mine=tile,
+                        near_tile_to_expand=not_my_tile,
+                        cost_to_conquer=cost,
+                        distance=tmp_distance_castle
+                    )
+
+                if not near_enemy_tile or tmp_distance_tile < near_enemy_tile.distance:
+                    near_enemy_tile = EnemyTile(
+                        enemy_position=tmp_near_enemy_tile,
+                        owner=world[tmp_near_enemy_tile].owner,
+                        structure=world[tmp_near_enemy_tile].structure,
+                        near_tile_mine=tile,
+                        near_tile_to_expand=not_my_tile,
+                        cost_to_conquer=cost,
+                        distance=tmp_distance_tile
+                    )
+
+
+        return where_to_expand_by_cost, near_enemy_castle, near_enemy_tile
 
     def process_world(self, world, map_size):
         enemies, tiles_by_type_and_owner = self._get_enemies_and_tiles_by_type_and_owner(world)
@@ -346,7 +397,9 @@ class BotLogic:
         where_to_fort = self._get_where_to_fort(unprotected_terrain, map_size)
         useful_to_expand = self._get_useful_to_expand(forts_and_castles, my_tiles, map_size)
         where_to_farm = self._get_where_to_plant_a_farm(tiles_by_type_and_owner, protected_terrain)
-        where_to_expand_by_cost = self._get_where_to_expand(borders, my_tiles, world, tiles_by_type_and_owner, map_size)
+        where_to_expand_by_cost, near_enemy_castle, near_enemy_tile = self._get_where_to_expand(
+            borders, my_tiles, world, tiles_by_type_and_owner, map_size, all_enemy_tiles, enemy_castles
+        )
 
         return Insights(
             enemies,
@@ -362,6 +415,8 @@ class BotLogic:
             useful_to_expand,
             where_to_farm,
             where_to_expand_by_cost,
+            near_enemy_castle,
+            near_enemy_tile,
         )
 
     def turn(self, map_size, my_resources, world):
