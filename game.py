@@ -259,7 +259,6 @@ class ToE:
             return winners, turn_number
         except KeyboardInterrupt:
             self.stop_players_bots()
-            sys.exit(1)
 
     def stop_players_bots(self):
         """
