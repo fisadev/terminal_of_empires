@@ -74,7 +74,8 @@ class Insights:
     near_enemy_castle: EnemyTile
     near_enemy_tile: EnemyTile
     near_enemy_to_my_castle: EnemyTile
-    conquer_next_to_castle: list
+    conquer_to_fortify: list
+    fortify_tiles: list
 
 
 class Strategy:
@@ -89,7 +90,7 @@ class Strategy:
         my_castles = len(self.insights.tiles_by_type_and_owner[CASTLE][MINE])
         my_tiles = len(self.insights.my_tiles)
 
-        size_enough = my_tiles / my_castles + 1 >= TILES_PER_CASTLE_LIMIT
+        size_enough = my_tiles / my_castles > TILES_PER_CASTLE_LIMIT
         money_enough = self.my_resources >= STRUCTURE_COST[CASTLE]
 
         if size_enough and money_enough:
@@ -108,9 +109,12 @@ class Strategy:
         return None
 
     def get_fortify_conquer_action(self):
-        for to_conquer in self.insights.conquer_next_to_castle:
+        for to_conquer in self.insights.conquer_to_fortify:
             if to_conquer.cost < self.my_resources:
                 return CONQUER, to_conquer.position
+        if STRUCTURE_COST[FORT] <= self.my_resources and self.insights.fortify_tiles:
+            fortify_tile = random_choice_from_set(self.insights.fortify_tiles)
+            return FORT, fortify_tile
 
         return False
 
@@ -131,7 +135,7 @@ class Strategy:
 
         my_farms = len(self.insights.tiles_by_type_and_owner[FARM][MINE])
 
-        if my_farms < 4:
+        if my_farms < 20:
             return True
 
         return False
@@ -223,7 +227,34 @@ class Strategy:
         return self.harvest()
 
 
+    def change_action(self, original_action, map_size):
+        action, position = original_action
+
+        if action == CONQUER:
+            if STRUCTURE_COST[FORT] <= self.my_resources:
+                adjacent_positions = adjacents(position, map_size)
+                where_to_fort = [
+                    adj for adj in adjacent_positions
+                    if adj in self.insights.my_tiles
+                    and adj not in self.insights.tiles_by_type_and_owner[CASTLE][MINE]
+                    and adj not in self.insights.tiles_by_type_and_owner[FORT][MINE]
+                ]
+                if where_to_fort:
+                    return FORT, random.choice(where_to_fort)
+
+                else:
+                    self.fortify()
+
+            return self.harvest()
+
+        return original_action
+
+
 class BotLogic:
+
+    def __init__(self, *args, **kwargs):
+        self.last_action = None
+        super().__init__(*args, **kwargs)
 
     @staticmethod
     def _get_enemies_and_tiles_by_type_and_owner(world):
@@ -428,16 +459,31 @@ class BotLogic:
         return where_to_expand_by_cost, near_enemy_castle, near_enemy_tile, near_enemy_to_my_castle
 
     def _get_fortify_conquer_tiles(self, my_castle_position, world, tiles_by_type_and_owner, map_size, my_tiles):
-        conquer_next_to_castle = []
+        conquer_to_fortify = []
+        fortify_tiles = []
 
         adjs_to_castle = adjacents(my_castle_position, map_size)
 
         for adj_c in adjs_to_castle:
             if adj_c not in my_tiles:
                 cost = self._get_conquer_cost(adj_c, world, tiles_by_type_and_owner, map_size)
-                conquer_next_to_castle.append(TileToConquer(adj_c, cost))
+                conquer_to_fortify.append(TileToConquer(adj_c, cost))
 
-        return conquer_next_to_castle
+        if not conquer_to_fortify:
+            for adj_c in adjs_to_castle:
+                for adj_adj_c in adjacents(adj_c, map_size):
+                    if adj_adj_c not in my_tiles:
+                        cost = self._get_conquer_cost(adj_adj_c, world, tiles_by_type_and_owner, map_size)
+                        conquer_to_fortify.append(TileToConquer(adj_adj_c, cost))
+                    elif world[adj_adj_c].structure not in (FORT, CASTLE):
+                        fortify_tiles.append(adj_adj_c)
+                    else:
+                        for adj_adj_adj_c in adjacents(adj_adj_c, map_size):
+                            if adj_adj_adj_c not in my_tiles:
+                                cost = self._get_conquer_cost(adj_adj_adj_c, world, tiles_by_type_and_owner, map_size)
+                                conquer_to_fortify.append(TileToConquer(adj_adj_adj_c, cost))
+
+        return conquer_to_fortify, fortify_tiles
 
     def process_world(self, world, map_size):
         enemies, tiles_by_type_and_owner = self._get_enemies_and_tiles_by_type_and_owner(world)
@@ -453,7 +499,7 @@ class BotLogic:
         where_to_expand_by_cost, near_enemy_castle, near_enemy_tile, near_enemy_to_my_castle = self._get_where_to_expand(
             borders, my_tiles, world, tiles_by_type_and_owner, map_size, all_enemy_tiles, enemy_castles
         )
-        conquer_next_to_castle = self._get_fortify_conquer_tiles(my_castle_position, world, tiles_by_type_and_owner, map_size, my_tiles)
+        conquer_to_fortify, fortify_tiles = self._get_fortify_conquer_tiles(my_castle_position, world, tiles_by_type_and_owner, map_size, my_tiles)
 
         return Insights(
             my_castle_position,
@@ -473,7 +519,8 @@ class BotLogic:
             near_enemy_castle,
             near_enemy_tile,
             near_enemy_to_my_castle,
-            conquer_next_to_castle,
+            conquer_to_fortify,
+            fortify_tiles
         )
 
     def turn(self, map_size, my_resources, world):
@@ -484,6 +531,10 @@ class BotLogic:
             if not isinstance(action, tuple):
                 raise Exception()
 
+            if self.last_action == action:
+                action = strategy.change_action(action, map_size)
+
+            self.last_action = action
             return action
         except:
             logging.exception("Error, use default strategy")
