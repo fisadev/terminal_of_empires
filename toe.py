@@ -1,9 +1,12 @@
 import sys
+from collections import defaultdict
 
 import click
 
 from game import ToE
 from ui import ToEUI
+
+BANNED_BOTS = {"orden66"}
 
 
 @click.command()
@@ -16,46 +19,67 @@ from ui import ToEUI
 @click.option("--log-path", type=click.Path(), default="./toe.log", help="Path for the log file of the game.")
 @click.option("--max-turns", type=int, default=None, help="Maximum number of turns to play (no limit if not specified).")
 @click.option("--debug", is_flag=True, help="In debug mode, any errors in the bot will stop the game and the traceback will be shown.")
-def main(width, height, players, no_ui, ui_turn_delay, log_path, turn_timeout, max_turns, debug):
+@click.option("--repeat", type=int, default=1, help="Repeat the game N times and return stats about winners of the games.")
+@click.option("--ignore-bans", is_flag=True, help="Ignore bots banned for being dangerous code.")
+def main(width, height, players, no_ui, ui_turn_delay, log_path, turn_timeout, max_turns, debug, repeat, ignore_bans):
     """
     Run a game of Terminal of Empires.
+
+    Optionally, repeat the game N times and return stats about winners of the games.
     """
-    if no_ui:
-        ui = None
-    else:
-        ui = ToEUI(ui_turn_delay)
+    scoreboard = defaultdict(int)
+    for game_number in range(repeat):
+        if no_ui:
+            print(f"Playing game {game_number + 1} of {repeat}...")
+            ui = None
+        else:
+            ui = ToEUI(ui_turn_delay)
 
-    toe = ToE(width, height, ui=ui, log_path=log_path, turn_timeout=turn_timeout, debug=debug)
+        toe = ToE(width, height, ui=ui, log_path=log_path, turn_timeout=turn_timeout, debug=debug)
 
-    for player_info in players.split(","):
-        try:
-            parts = player_info.split(":")
-            if len(parts) == 2:
-                name, bot_type = player_info.split(":")
-                castle_position = None
-            elif len(parts) == 3:
-                name, bot_type, position = player_info.split(":")
-                x, y = position.split(".")
-                castle_position = (int(x), int(y))
-            else:
-                raise ValueError()
+        for player_info in players.split(","):
+            try:
+                parts = player_info.split(":")
+                if len(parts) == 2:
+                    name, bot_type = player_info.split(":")
+                    castle_position = None
+                elif len(parts) == 3:
+                    name, bot_type, position = player_info.split(":")
+                    x, y = position.split(".")
+                    castle_position = (int(x), int(y))
+                else:
+                    raise ValueError()
 
-            bot_type = bot_type.lower()
-        except ValueError:
-            print(f"Invalid player info: {player_info}. Should be name:bot_type")
-            sys.exit(1)
+                bot_type = bot_type.lower()
+            except ValueError:
+                print(f"Invalid player info: {player_info}. Should be name:bot_type")
+                sys.exit(1)
 
-        toe.add_player(name, bot_type, castle_position=castle_position)
+            if bot_type in BANNED_BOTS and not ignore_bans:
+                print(f"Bot {bot_type} is banned for being dangerous. You can override this with --ignore-bans.")
+                sys.exit(1)
 
-    if ui:
-        with ui.show():
+            toe.add_player(name, bot_type, castle_position=castle_position)
+
+        if ui:
+            with ui.show():
+                result = toe.play(max_turns=max_turns)
+        else:
             result = toe.play(max_turns=max_turns)
-    else:
-        result = toe.play(max_turns=max_turns)
 
-    if result:
-        winners, turns_played = result
-        print(" and ".join(p.name for p in winners), "won in", turns_played, "turns!")
+        if result:
+            winners, turns_played = result
+            print("Game", game_number + 1, "ended in", turns_played, "turns!")
+            print("Winners:", ",".join(player.name for player in winners))
+            score = 1 / len(winners)
+            for winner in winners:
+                scoreboard[winner.name] += score
+            print()
+
+    if repeat > 1:
+        print("Final scoreboard of", repeat, "games:")
+        for player, score in sorted(scoreboard.items(), key=lambda x: x[1], reverse=True):
+            print(f"{player}: {score}")
 
 
 if __name__ == '__main__':
