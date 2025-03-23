@@ -1,11 +1,13 @@
-import json
 import logging
-import psutil
 
+import click
+import psutil
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
 from game import Player
+from serialization_helpers import deserialize_map_size, deserialize_world
 
 logging.basicConfig(
     level=logging.INFO,
@@ -16,7 +18,13 @@ logging.basicConfig(
 app = FastAPI()
 
 
-def print_ips():
+class TurnRequest(BaseModel):
+    map_size: tuple
+    world: dict
+    resources: int
+
+
+def _print_ips():
     try:
         addrs = psutil.net_if_addrs()
 
@@ -37,17 +45,39 @@ def print_ips():
 
 
 @app.post("/turn")
-def turn(map_size, resources, world):
-    player.resources = resources
-    action = player.ask_action(map_size=map_size, world=world, timeout=None)
+def turn(body: TurnRequest):
+    map_size = deserialize_map_size(body.map_size)
+    world = deserialize_world(body.world)
 
-    return json.dumps(action)
+    player.resources = body.resources
+    action_committed, action = player.ask_action(
+        map_size=map_size, world=world, timeout=None
+    )
+
+    if action_committed:
+        return dict(action=action)
+
+    raise HTTPException(status_code=404, detail="Failed to commit action")
 
 
-if __name__ == "__main__":
-    print_ips()
+@click.command()
+@click.option(
+    "--player",
+    type=str,
+    help="Player, specified as player_name:bot_type",
+)
+def main(player):
+    _print_ips()
 
-    player = Player("server", "aggressive", resources=0, debug=True)
+    name, bot_type = player.split(":")
+
+    print(f"Player: {name}, Bot Type: {bot_type}")
+
+    player = Player(name=name, bot_type=bot_type, debug=True)
     player.start_bot_logic()
 
     uvicorn.run(app=app, host="0.0.0.0", port=8000)
+
+
+if __name__ == "__main__":
+    main()
