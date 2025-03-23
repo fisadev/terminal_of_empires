@@ -60,7 +60,7 @@ class Player:
     A player playing the game.
     Its bot logic is run in a subprocess.
     """
-    def __init__(self, name, bot_type, resources, debug):
+    def __init__(self, name, bot_type, resources=0, debug=False):
         self.name = name
         self.bot_type = bot_type
         self.resources = resources
