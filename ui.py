@@ -63,9 +63,9 @@ class ToEUI:
         for position, terrain in toe.world.items():
             with self.term.location(position.x * 2, position.y):
                 if blink_winners and terrain.owner in winner_names:
-                    print(f"{self.player_colors[None]}{ICONS[terrain.structure]}{self.term.normal}{self.term.clear_eol}", end="")
+                    print(f"{self.player_colors[None]}{ICONS[terrain.structure]}{self.term.normal}", end="")
                 else:
-                    print(f"{self.player_colors[terrain.owner]}{ICONS[terrain.structure]}{self.term.normal}{self.term.clear_eol}", end="")
+                    print(f"{self.player_colors[terrain.owner]}{ICONS[terrain.structure]}{self.term.normal}", end="")
 
     def render_players_status(self, toe, turn_number, winner_names, blink_winners=False):
         """
