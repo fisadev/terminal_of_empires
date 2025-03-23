@@ -63,16 +63,16 @@ class ToEUI:
         for position, terrain in toe.world.items():
             with self.term.location(position.x * 2, position.y):
                 if blink_winners and terrain.owner in winner_names:
-                    print(f"{self.player_colors[None]}{ICONS[terrain.structure]}{self.term.normal}", end="")
+                    print(f"{self.player_colors[None]}{ICONS[terrain.structure]}{self.term.normal}{self.term.clear_eol}", end="")
                 else:
-                    print(f"{self.player_colors[terrain.owner]}{ICONS[terrain.structure]}{self.term.normal}", end="")
+                    print(f"{self.player_colors[terrain.owner]}{ICONS[terrain.structure]}{self.term.normal}{self.term.clear_eol}", end="")
 
     def render_players_status(self, toe, turn_number, winner_names, blink_winners=False):
         """
         Render the status of the players.
         """
         with self.term.location(0, toe.map_size.y):
-            print("Turn", turn_number, "| Stats:                      ")
+            print("Turn", turn_number, "| Stats:", self.term.clear_eol)
             player_stats = {
                 player.name: {CASTLE: 0, FARM: 0, FORT: 0, "tiles": 0}
                 for player in toe.players.values()
@@ -95,18 +95,19 @@ class ToEUI:
                     f"{player_stats[player.name][FORT]}<> "
                     f"{player_stats[player.name]['tiles']}t "
                     f"{percent}%"
+                    f"{self.term.clear_eol}"
                 )
 
                 if player.alive:
                     if player.name in winner_names:
                         if blink_winners:
-                            print(f"{self.player_colors[None]}{player}: {stats} WINNER!!{self.term.normal} Press ctrl-c to quit")
+                            print(f"{self.player_colors[None]}{player}: {stats} WINNER!!{self.term.normal} Press ctrl-c to quit{self.term.clear_eol}")
                         else:
-                            print(f"{self.player_colors[player.name]}{player}: {stats} WINNER!!{self.term.normal} Press ctrl-c to quit")
+                            print(f"{self.player_colors[player.name]}{player}: {stats} WINNER!!{self.term.normal} Press ctrl-c to quit{self.term.clear_eol}")
                     else:
-                        print(f"{self.player_colors[player.name]}{player}: {stats}{self.term.normal}     ")
+                        print(f"{self.player_colors[player.name]}{player}: {stats}{self.term.normal}{self.term.clear_eol}")
                 else:
-                    print(f"{self.player_colors[player.name]}{player}: {stats} DEAD{self.term.normal}     ")
+                    print(f"{self.player_colors[player.name]}{player}: {stats} DEAD{self.term.normal}{self.term.clear_eol}")
 
     @contextmanager
     def show(self):
