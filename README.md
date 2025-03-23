@@ -52,8 +52,9 @@ You can even query the log live, while the game is playing.
 To make your own bot logic, just create a Python file in the `bots/` directory that defines a class called "BotLogic", which should have the following methods:
 
 
-`bots/my_super_bot.py`
-```
+`bots/my_super_bot.py:`
+
+```python
 from game import Position, Terrain
 
 class BotLogic:
@@ -205,3 +206,24 @@ You can find more examples in the `bots/` directory.
 Take a look at them, their code is fairly simple and easy to understand, they're meant as examples for you to learn from :)
 
 Have fun!
+
+# Remote players
+
+If you want to be super secretive about your high-tech bot, there's a way of playing with others without sharing your bot code!
+
+Let's say you, Alice, have a bot in a file called `alice_bot.py` that you don't want to share before the Big Tournament.
+Bob just invited you to play a practice match against him, and you want to play with your bot but without him being able to see your code.
+
+So first you launch a player server in your machine, like this:
+
+```bash
+python player_server.py --player alice:alice_bot
+```
+
+And then you tell Bob to run the game with a player pointing to your IP address, like this:
+
+```bash
+python toe.py --players bob:bobs_bot,alice:YOUR_IP_ADDRESS
+```
+
+And that's it! The game will run with Bob's bot running in his machine and your bot running in yours :)
