@@ -6,7 +6,7 @@ import click
 from game import ToE
 from ui import ToEUI
 
-BAN_LIST = {"orden66"}
+BANNED_BOTS = {"orden66"}
 
 
 @click.command()
@@ -55,7 +55,7 @@ def main(width, height, players, no_ui, ui_turn_delay, log_path, turn_timeout, m
                 print(f"Invalid player info: {player_info}. Should be name:bot_type")
                 sys.exit(1)
 
-            if bot_type in BAN_LIST and not ignore_bans:
+            if bot_type in BANNED_BOTS and not ignore_bans:
                 print(f"Bot {bot_type} is banned for being dangerous. You can override this with --ignore-bans.")
                 sys.exit(1)
 
