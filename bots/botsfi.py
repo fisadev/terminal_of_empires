@@ -109,7 +109,6 @@ class Strategy:
 
     def get_fortify_conquer_action(self):
         for to_conquer in self.insights.conquer_next_to_castle:
-            logging.warning(to_conquer)
             if to_conquer.cost < self.my_resources:
                 return CONQUER, to_conquer.position
 
