@@ -13,9 +13,11 @@ logging.basicConfig(
 )
 
 AGGRESIVE_LEVEL = 3
+AGGRESIVE_SWITCH = 200
 DEFENSIVE_LEVEL = 1
 
-ALL_ACTIONS = [CASTLE, CONQUER, FARM, FORT]
+ALL_WEIGHTS = {CASTLE :1, CONQUER : 1, FARM: 1, FORT  :1 }
+END_WEIGHTS = {CASTLE :25, CONQUER : 50, FARM: 1, FORT:25}
 STRUCTURES = {CASTLE, FARM, FORT}
 
 def dst(p1, p2):
@@ -101,21 +103,28 @@ class World:
     def distance_to_enemy_castle(self, tile):
         e = [t for t in self.enemy if t[1].structure == CASTLE]
         return min([dst(c[0], tile[0]) for c in e])
+
+    def get_tax_amount(self):
+        return len(self.structures[CASTLE] + self.structures[FARM])
         
 
 class BotLogic:
     def turn(self, map_size, my_resources, world):
         world = World(world, my_resources)
-        possible_actions = self.get_actions()
+        possible_actions = self.get_actions(world)
         return self.make_move(
             possible_actions, world
             )
 
-    def get_actions(self):
-        return ALL_ACTIONS.copy()
+    def get_actions(self, world):
+        if world.get_tax_amount() > AGGRESIVE_SWITCH:
+            return END_WEIGHTS.copy()
+        return ALL_WEIGHTS.copy()
 
     def choose_action(self, possible_actions):
-        return random.choice(possible_actions)
+        weights = [w for a, w in possible_actions.items()]
+        actions = [a for a, w in possible_actions.items()]
+        return random.choices(actions, weights)[0]
 
     def get_weights_by_positon(self, dists):
         n = len(dists)
@@ -147,7 +156,7 @@ class BotLogic:
         if tiles := world.possible_positions(action):
             return action, self.choose_position_for(tiles, action, world)
         else:
-            possible_actions.remove(action)
+            possible_actions.pop(action, None)
             return self.make_move(possible_actions, world)
         raise Exception
 
