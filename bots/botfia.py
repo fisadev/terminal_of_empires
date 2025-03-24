@@ -194,8 +194,9 @@ class Strategy:
 
     def decide_defense_mode(self):
         # fortify nearest if not already fortified
-        if self.insights.near_enemy_to_my_castle.distance < 4:
-            if self.insights.near_enemy_to_my_castle.near_tile_mine in self.insights.unprotected_terrain:
+        if self.insights.near_enemy_to_my_castle.distance < 10:
+            my_castles_and_forts = self.insights.tiles_by_type_and_owner[CASTLE][MINE].union(self.insights.tiles_by_type_and_owner[FORT][MINE])
+            if self.insights.near_enemy_to_my_castle.near_tile_mine not in my_castles_and_forts:
                 return True
 
         return False
