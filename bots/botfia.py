@@ -20,9 +20,16 @@ from game import (
 EnemyTile = namedtuple("EnemyTile", "enemy_position owner structure near_tile_mine near_tile_to_expand cost_to_conquer distance")
 TileToConquer = namedtuple("TileToConquer", "position cost")
 
+class NoCastleException(Exception):
+    pass
+
 def random_choice_from_set(my_set):
     return random.choice(list(my_set))
 
+def panic_castle(world):
+    my_tiles = [position for position, data in world.items() if data.owner==MINE]
+
+    return CASTLE, random.choice(my_tiles)
 
 def distance(p1, p2):
     """
@@ -79,9 +86,10 @@ class Insights:
 
 
 class Strategy:
-    def __init__(self, insights: Insights, my_resources: int):
+    def __init__(self, insights: Insights, my_resources: int, map_size: tuple):
         self.insights = insights
         self.my_resources = my_resources
+        self.map_size = map_size
 
     def harvest(self):
         return HARVEST, None
@@ -187,17 +195,31 @@ class Strategy:
 
     def decide_defense_mode(self):
         # fortify nearest if not already fortified
-        if self.insights.near_enemy_to_my_castle.distance < 4:
-            if self.insights.near_enemy_to_my_castle.near_tile_mine in self.insights.unprotected_terrain:
+        if self.insights.near_enemy_to_my_castle.distance < 10:
+            my_castles_and_forts = self.insights.tiles_by_type_and_owner[CASTLE][MINE].union(self.insights.tiles_by_type_and_owner[FORT][MINE])
+            if self.insights.near_enemy_to_my_castle.near_tile_mine not in my_castles_and_forts:
+                return True
+            adjacent_positions = [adj for adj in adjacents(self.insights.near_enemy_to_my_castle.near_tile_mine, self.map_size) if adj in self.insights.my_tiles]
+
+            adjacent_positions_not_fort_nor_castle = [adj for adj in adjacent_positions if adj not in my_castles_and_forts]
+
+            if adjacent_positions_not_fort_nor_castle:
                 return True
 
         return False
 
     def defense_mode_action(self):
-        if STRUCTURE_COST[FORT] <= self.my_resources:
+        if not STRUCTURE_COST[FORT] <= self.my_resources:
+            return self.harvest()
+
+        my_castles_and_forts = self.insights.tiles_by_type_and_owner[CASTLE][MINE].union(self.insights.tiles_by_type_and_owner[FORT][MINE])
+        if self.insights.near_enemy_to_my_castle.near_tile_mine not in my_castles_and_forts:
             return FORT, self.insights.near_enemy_to_my_castle.near_tile_mine
 
-        return self.harvest()
+        adjacent_positions = [adj for adj in adjacents(self.insights.near_enemy_to_my_castle.near_tile_mine, (40, 20)) if adj in self.insights.my_tiles]
+        adjacent_positions_not_fort_nor_castle = [adj for adj in adjacent_positions if adj not in my_castles_and_forts]
+
+        return FORT, random.choice(adjacent_positions_not_fort_nor_castle)
 
     def select_action(self):
         if not self.my_resources:
@@ -487,7 +509,10 @@ class BotLogic:
 
     def process_world(self, world, map_size):
         enemies, tiles_by_type_and_owner = self._get_enemies_and_tiles_by_type_and_owner(world)
-        my_castle_position = next(iter(tiles_by_type_and_owner[CASTLE][MINE]))
+        try:
+            my_castle_position = next(iter(tiles_by_type_and_owner[CASTLE][MINE]))
+        except:
+            raise NoCastleException()
         all_enemy_tiles = self._get_all_enemy_tiles(tiles_by_type_and_owner)
         enemy_castles = self._get_enemy_castles(tiles_by_type_and_owner)
         forts_and_castles = tiles_by_type_and_owner[CASTLE][MINE].union(tiles_by_type_and_owner[FORT][MINE])
@@ -526,16 +551,20 @@ class BotLogic:
     def turn(self, map_size, my_resources, world):
         try:
             insights = self.process_world(world, map_size)
-            strategy = Strategy(insights, my_resources)
+            strategy = Strategy(insights, my_resources, map_size)
             action = strategy.select_action()
             if not isinstance(action, tuple):
-                raise Exception()
+                logging.warning("LA ACCION %s", action)
+                raise Exception("action not instance %s", action)
 
             if self.last_action == action:
                 action = strategy.change_action(action, map_size)
 
             self.last_action = action
             return action
+        except NoCastleException:
+            logging.warning("PANIC")
+            return panic_castle(world)
         except:
             logging.exception("Error, use default strategy")
         return "harvest", None
