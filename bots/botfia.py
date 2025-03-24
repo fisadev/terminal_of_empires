@@ -86,9 +86,10 @@ class Insights:
 
 
 class Strategy:
-    def __init__(self, insights: Insights, my_resources: int):
+    def __init__(self, insights: Insights, my_resources: int, map_size: tuple):
         self.insights = insights
         self.my_resources = my_resources
+        self.map_size = map_size
 
     def harvest(self):
         return HARVEST, None
@@ -198,14 +199,27 @@ class Strategy:
             my_castles_and_forts = self.insights.tiles_by_type_and_owner[CASTLE][MINE].union(self.insights.tiles_by_type_and_owner[FORT][MINE])
             if self.insights.near_enemy_to_my_castle.near_tile_mine not in my_castles_and_forts:
                 return True
+            adjacent_positions = [adj for adj in adjacents(self.insights.near_enemy_to_my_castle.near_tile_mine, self.map_size) if adj in self.insights.my_tiles]
+
+            adjacent_positions_not_fort_nor_castle = [adj for adj in adjacent_positions if adj not in my_castles_and_forts]
+
+            if adjacent_positions_not_fort_nor_castle:
+                return True
 
         return False
 
     def defense_mode_action(self):
-        if STRUCTURE_COST[FORT] <= self.my_resources:
+        if not STRUCTURE_COST[FORT] <= self.my_resources:
+            return self.harvest()
+
+        my_castles_and_forts = self.insights.tiles_by_type_and_owner[CASTLE][MINE].union(self.insights.tiles_by_type_and_owner[FORT][MINE])
+        if self.insights.near_enemy_to_my_castle.near_tile_mine not in my_castles_and_forts:
             return FORT, self.insights.near_enemy_to_my_castle.near_tile_mine
 
-        return self.harvest()
+        adjacent_positions = [adj for adj in adjacents(self.insights.near_enemy_to_my_castle.near_tile_mine, (40, 20)) if adj in self.insights.my_tiles]
+        adjacent_positions_not_fort_nor_castle = [adj for adj in adjacent_positions if adj not in my_castles_and_forts]
+
+        return FORT, random.choice(adjacent_positions_not_fort_nor_castle)
 
     def select_action(self):
         if not self.my_resources:
@@ -537,7 +551,7 @@ class BotLogic:
     def turn(self, map_size, my_resources, world):
         try:
             insights = self.process_world(world, map_size)
-            strategy = Strategy(insights, my_resources)
+            strategy = Strategy(insights, my_resources, map_size)
             action = strategy.select_action()
             if not isinstance(action, tuple):
                 logging.warning("LA ACCION %s", action)
