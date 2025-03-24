@@ -20,9 +20,16 @@ from game import (
 EnemyTile = namedtuple("EnemyTile", "enemy_position owner structure near_tile_mine near_tile_to_expand cost_to_conquer distance")
 TileToConquer = namedtuple("TileToConquer", "position cost")
 
+class NoCastleException(Exception):
+    pass
+
 def random_choice_from_set(my_set):
     return random.choice(list(my_set))
 
+def panic_castle(world):
+    my_tiles = [position for position, data in world.items() if data.owner==MINE]
+
+    return CASTLE, random.choice(my_tiles)
 
 def distance(p1, p2):
     """
@@ -487,7 +494,10 @@ class BotLogic:
 
     def process_world(self, world, map_size):
         enemies, tiles_by_type_and_owner = self._get_enemies_and_tiles_by_type_and_owner(world)
-        my_castle_position = next(iter(tiles_by_type_and_owner[CASTLE][MINE]))
+        try:
+            my_castle_position = next(iter(tiles_by_type_and_owner[CASTLE][MINE]))
+        except:
+            raise NoCastleException()
         all_enemy_tiles = self._get_all_enemy_tiles(tiles_by_type_and_owner)
         enemy_castles = self._get_enemy_castles(tiles_by_type_and_owner)
         forts_and_castles = tiles_by_type_and_owner[CASTLE][MINE].union(tiles_by_type_and_owner[FORT][MINE])
@@ -529,13 +539,17 @@ class BotLogic:
             strategy = Strategy(insights, my_resources)
             action = strategy.select_action()
             if not isinstance(action, tuple):
-                raise Exception()
+                logging.warning("LA ACCION %s", action)
+                raise Exception("action not instance %s", action)
 
             if self.last_action == action:
                 action = strategy.change_action(action, map_size)
 
             self.last_action = action
             return action
+        except NoCastleException:
+            logging.warning("PANIC")
+            return panic_castle(world)
         except:
             logging.exception("Error, use default strategy")
         return "harvest", None
